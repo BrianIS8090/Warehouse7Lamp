@@ -23,9 +23,26 @@
         #globalLoader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-col: column; backdrop-filter: blur(2px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
+		/* Кнопка синхронизации */
+        .sync-fab {
+            position: fixed; bottom: 20px; right: 20px; z-index: 90;
+            display: flex; align-items: center; gap: 8px;
+            padding: 12px 24px; border-radius: 99px; 
+            color: white; font-weight: bold; font-size: 0.9rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: all 0.3s ease; border: none; cursor: pointer;
+        }
+        .sync-clean { background-color: #2563eb; opacity: 0.8; }
+        .sync-dirty { background-color: #dc2626; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800 relative">
+
+<button onclick="syncWithCloud()" id="syncBtn" class="sync-fab sync-clean">
+        <i class="fas fa-cloud-upload-alt"></i> 
+        <span id="syncText">Синхронизировано</span>
+    </button>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyLI4Us7sAhicC-B_vdFqB9d8F6xDEx6t7x942GagG0Obl7Jp0Oh-7twn1UTtaeZKyh/exec";
@@ -102,11 +119,46 @@
             <div class="w-1/4 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 relative"><h3 class="font-bold text-slate-700 mb-2 border-b pb-2 flex justify-between items-center"><span>2. Спецификации</span><button onclick="addNewSpecToProject()" id="btnAddSpec" class="text-blue-600 text-xs hidden hover:bg-blue-50 p-1 rounded"><i class="fas fa-plus"></i> Добавить</button></h3><div id="specListPlaceholder" class="text-center text-slate-400 mt-10 text-xs">Выберите проект</div><div id="specListContainer" class="hidden space-y-2 overflow-y-auto flex-1 pr-1"></div></div>
             <div class="flex-1 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 relative">
                 <div id="specEditor" class="hidden flex flex-col h-full">
-                    <div class="flex justify-between items-start mb-4 border-b pb-2"><div><h2 class="font-bold text-lg text-blue-800" id="specTitle">...</h2><p class="text-xs text-slate-500" id="specSubtitle">...</p></div><button id="btnCommitSpec" onclick="commitSpec()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded shadow text-xs font-bold uppercase"><i class="fas fa-check mr-2"></i> Списать</button></div>
-                    <div id="specAddPanel" class="bg-slate-50 p-3 rounded border mb-4 flex gap-2 items-end"><div class="flex-1 relative"><label class="text-xs font-bold text-slate-500">Поиск товара</label><input type="text" id="specSearchInput" class="w-full border p-2 rounded text-sm" placeholder="Вводите название..." oninput="filterSpecSearch()"><div id="specSearchResults" class="absolute top-full left-0 w-full bg-white border shadow-lg max-h-40 overflow-auto hidden z-50"></div></div><div class="w-20"><label class="text-xs font-bold text-slate-500">Кол-во</label><input type="number" id="specAddQty" class="w-full border p-2 rounded text-sm" value="1"></div><button onclick="addToSpec()" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"><i class="fas fa-plus"></i></button></div>
-                    <div class="overflow-auto flex-1"><table class="w-full text-sm text-left"><thead class="text-xs text-slate-500 uppercase bg-slate-50"><tr><th class="px-4 py-2">Товар</th><th class="px-4 py-2 text-center">Кол-во</th><th class="px-4 py-2 text-right">Сумма</th><th class="px-4 py-2"></th></tr></thead><tbody id="specTableBody"></tbody></table></div>
-                    <div class="mt-2 text-right font-bold">Итого: <span id="specTotalCost">0 ₽</span></div>
-                </div>
+                    
+                    <div class="flex justify-between items-center mb-2 border-b pb-2">
+                        <div>
+                            <h2 class="font-bold text-blue-800 text-sm" id="specTitle">...</h2>
+                            <p class="text-[10px] text-slate-500 font-bold uppercase" id="specSubtitle">...</p>
+                        </div>
+                        <button id="btnCommitSpec" onclick="commitSpec()" class="bg-green-600 text-white px-3 py-1.5 rounded shadow text-xs font-bold uppercase active:scale-95 transition">
+                            Списать
+                        </button>
+                    </div>
+
+                    <div class="flex justify-end mb-3">
+                        <div class="bg-blue-50 text-blue-900 px-3 py-1.5 rounded-lg border border-blue-100 text-sm font-bold shadow-sm">
+                            Итого: <span id="specTotalCost">0 ₽</span>
+                        </div>
+                    </div>
+
+                    <div id="specAddPanel" class="flex gap-2 mb-3 relative z-20">
+                        <input type="text" id="specSearchInput" class="flex-1 border p-2 rounded text-sm" placeholder="Поиск товара..." oninput="filterSpecSearch()">
+                        <input type="number" id="specAddQty" class="w-16 border p-2 rounded text-sm text-center" value="1">
+                        <button onclick="addToSpec()" class="bg-blue-600 text-white px-3 rounded active:bg-blue-800"><i class="fas fa-plus"></i></button>
+                        
+                        <div id="specSearchResults" class="hidden absolute top-full left-0 w-full bg-white border shadow-xl max-h-48 overflow-auto rounded-b-lg"></div>
+                    </div>
+
+                    <div class="overflow-auto flex-1 border-t border-slate-100">
+                        <table class="w-full text-sm text-left whitespace-nowrap">
+                            <thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-2">Товар</th>
+                                    <th class="px-2 py-2 text-center">К-во</th>
+                                    <th class="px-2 py-2 text-right">Сумма</th>
+                                    <th class="px-2 py-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="specTableBody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    
+                    </div>
                 <div id="specContentPlaceholder" class="flex items-center justify-center h-full text-slate-400 text-sm">Выберите спецификацию</div>
             </div>
         </div>
@@ -183,38 +235,82 @@
     <script>
         let db = { items: [], projects: [], specs: {}, movements: [] };
         let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null;
+        let hasUnsavedChanges = false; // Флаг изменений
 
-        // --- API SYNC ---
+        // --- НОВАЯ ЛОГИКА СИНХРОНИЗАЦИИ ---
+        
         async function init() {
             if(API_URL.includes("ВСТАВЬ")) return alert("Вставь ссылку API в код!");
             showLoader(true);
             try {
+                // Пробуем скачать свежее из облака при старте
                 const res = await fetch(API_URL);
                 const data = await res.json();
-                if(data && data.items) db = data;
-                else seedData(); // Если база пустая
-                
-                // Если данные старого формата (массивы specs), конвертируем
-                if(Array.isArray(db.specs)) db.specs = {};
-
+                if(data && data.items) {
+                    db = data;
+                    if(Array.isArray(db.specs)) db.specs = {}; 
+                    // Сохраняем в память, но говорим, что изменений нет (мы только что скачали)
+                    localStorage.setItem('wms_v3_data', JSON.stringify(db));
+                    hasUnsavedChanges = false;
+                } else {
+                    seedData();
+                }
                 refreshAll();
+                updateSyncUI();
             } catch(e) {
-                alert("Ошибка загрузки. Проверьте интернет.");
-                console.error(e);
+                // Если нет интернета - грузим из памяти
+                const saved = localStorage.getItem('wms_v3_data');
+                if(saved) {
+                    db = JSON.parse(saved);
+                    showToast("Оффлайн режим");
+                }
+                refreshAll();
             } finally {
                 showLoader(false);
             }
         }
 
-        async function save() {
+        // Эта функция теперь вызывается кнопкой
+        async function syncWithCloud() {
+            if(!hasUnsavedChanges && !confirm("Изменений не было. Все равно отправить в облако?")) return;
+            
             showLoader(true);
             try {
                 await fetch(API_URL, { method: "POST", body: JSON.stringify(db) });
-                refreshAll();
+                hasUnsavedChanges = false; // Сбрасываем флаг
+                updateSyncUI();
+                showToast("Успешно синхронизировано!");
             } catch(e) {
-                alert("Ошибка сохранения! Данные не ушли в облако.");
+                alert("Ошибка соединения с Google!");
             } finally {
                 showLoader(false);
+            }
+        }
+
+        // Эту функцию вызывают все кнопки (Добавить, Удалить и т.д.)
+        // Она больше НЕ отправляет в интернет, только в память телефона
+        // Эту функцию вызывают все кнопки
+        function save() {
+            // 1. Сохраняем в память телефона
+            localStorage.setItem('wms_v3_data', JSON.stringify(db));
+            
+            // 2. Ставим флаг, что есть изменения
+            hasUnsavedChanges = true; 
+            updateSyncUI();
+
+            // 3. ВАЖНО: Мгновенно обновляем экран!
+            refreshAll(); 
+        }
+
+        function updateSyncUI() {
+            const btn = document.getElementById('syncBtn');
+            const txt = document.getElementById('syncText');
+            if(hasUnsavedChanges) {
+                btn.className = "sync-fab sync-dirty";
+                txt.textContent = "Сохранить изменения!";
+            } else {
+                btn.className = "sync-fab sync-clean";
+                txt.textContent = "Синхронизировано";
             }
         }
 
@@ -290,31 +386,42 @@
         }
         function renderWarehouse() {
             const tbody = document.getElementById('warehouseTableBody'); 
-            tbody.innerHTML = '';
             const q = document.getElementById('warehouseSearch').value.toLowerCase();
             
-            db.items.filter(i => (currentFilterCat === 'all' || i.cat === currentFilterCat) && (i.name.toLowerCase().includes(q) || i.manuf.toLowerCase().includes(q))).forEach(i => {
-                
-                // --- ВОТ ЗДЕСЬ БЫЛО ИЗМЕНЕНИЕ ---
-                // Если есть ссылка, показываем картинку. Если нет - прочерк.
-                const img = i.img ? `<img src="${i.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото">` : '<span class="text-slate-300">-</span>';
-                // --------------------------------
+            // 1. Фильтруем данные
+            const filtered = db.items.filter(i => {
+                const matchCat = currentFilterCat === 'all' || i.cat === currentFilterCat;
+                const matchSearch = i.name.toLowerCase().includes(q) || i.manuf.toLowerCase().includes(q);
+                return matchCat && matchSearch;
+            });
+
+            // 2. Собираем HTML одной большой строкой (это в 100 раз быстрее, чем +=)
+            const htmlRows = filtered.map(i => {
+                const img = i.img 
+                    ? `<img src="${i.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото">` 
+                    : '<span class="text-slate-300">-</span>';
                 
                 const res = getReserve(i.id); 
                 const free = i.qty - res;
                 
-                tbody.innerHTML += `
-                    <tr onclick="openItemCard(${i.id})" class="border-b hover:bg-blue-50 cursor-pointer transition h-14">
+                // Цвет остатка: красный если меньше 0, оранжевый если меньше 5, иначе синий
+                const freeColor = free < 0 ? 'text-red-600' : (free < 5 ? 'text-orange-600' : 'text-blue-600');
+
+                return `
+                    <tr onclick="openItemCard(${i.id})" class="border-b hover:bg-blue-50 cursor-pointer transition h-14 group">
                         <td class="px-4 py-2 text-center">${img}</td>
-                        <td class="px-4 py-2 font-medium text-blue-700 hover:underline">${i.name}</td>
+                        <td class="px-4 py-2 font-medium text-blue-700 group-hover:underline">${i.name}</td>
                         <td class="px-4 py-2 text-slate-500">${i.manuf}</td>
-                        <td class="px-4 py-2 text-center font-bold">${i.qty}</td>
-                        <td class="px-4 py-2 text-center text-orange-500 font-semibold">${res>0?res:'-'}</td>
-                        <td class="px-4 py-2 text-center font-bold ${free<0?'text-red-600':'text-blue-600'}">${free}</td>
-                        <td class="px-4 py-2 text-right">${i.cost}</td>
+                        <td class="px-4 py-2 text-center font-bold text-slate-700">${i.qty}</td>
+                        <td class="px-4 py-2 text-center text-orange-500 font-semibold bg-orange-50 rounded">${res > 0 ? res : '-'}</td>
+                        <td class="px-4 py-2 text-center font-bold ${freeColor}">${free}</td>
+                        <td class="px-4 py-2 text-right text-sm text-slate-600">${i.cost.toLocaleString()} ₽</td>
                     </tr>
                 `;
-            });
+            }).join(''); // Склеиваем массив в одну строку
+
+            // 3. Вставляем всё разом
+            tbody.innerHTML = htmlRows || '<tr><td colspan="7" class="p-8 text-center text-slate-400">Ничего не найдено</td></tr>';
         }
 
         // Movements
@@ -439,7 +546,84 @@
         function createNewItem() { const i = {id:Date.now(), name:document.getElementById('newItemName').value, manuf:document.getElementById('newItemManuf').value, cat:document.getElementById('newItemCat').value||'Разное', qty:parseFloat(document.getElementById('newItemQty').value)||0, unit:document.getElementById('newItemUnit').value, cost:parseFloat(document.getElementById('newItemCost').value)||0, chars:document.getElementById('newItemChars').value, img:document.getElementById('newItemImg').value}; if(!i.name)return; db.items.push(i); if(i.qty>0) db.movements.unshift({date:new Date().toLocaleString(), type:'in', itemId:i.id, itemName:i.name, qty:i.qty}); save(); closeModal('createItemModal'); }
         function openCreateProjectModal() { document.getElementById('newPrName').value=''; document.getElementById('createProjectModal').classList.remove('hidden'); }
         function createNewProject() { const p = {id:Date.now(), year:document.getElementById('newPrYear').value, num:document.getElementById('newPrNum').value, name:document.getElementById('newPrName').value, desc:document.getElementById('newPrDesc').value, client:document.getElementById('newPrClient').value, start:document.getElementById('newPrStart').value, end:document.getElementById('newPrEnd').value, cost:parseFloat(document.getElementById('newPrCost').value)||0, status:'active'}; if(!p.name)return; db.projects.push(p); db.specs[p.id]=[]; save(); closeModal('createProjectModal'); }
-        function openItemCard(id) { const i = db.items.find(x => x.id === id); document.getElementById('cardId').value=i.id; document.getElementById('cardName').value=i.name; document.getElementById('cardManuf').value=i.manuf; document.getElementById('cardCat').value=i.cat; document.getElementById('cardQty').value=i.qty; document.getElementById('cardUnit').value=i.unit; document.getElementById('cardCost').value=i.cost; document.getElementById('cardChars').value=i.chars; document.getElementById('cardImg').value=i.img||''; document.getElementById('cardFile').value=i.file||''; const mh = document.getElementById('cardMovHistory'); mh.innerHTML=''; db.movements.filter(m => m.itemId===i.id).slice(0,10).forEach(m => mh.innerHTML+=`<tr><td class="p-1 border">${m.date.split(',')[0]}</td><td class="p-1 border">${m.type==='in'?'Приход':'Уход'}</td><td class="p-1 border text-right">${m.qty}</td></tr>`); const sh = document.getElementById('cardSpecHistory'); sh.innerHTML=''; db.projects.forEach(p => (db.specs[p.id]||[]).forEach(s => { const l = s.items.find(x => x.itemId===i.id); if(l) sh.innerHTML+=`<tr><td class="p-1 border">${p.name}</td><td class="p-1 border">${s.name}</td><td class="p-1 border text-center">${s.status}</td><td class="p-1 border text-right">${l.qty}</td></tr>`; })); switchModalTab('info'); document.getElementById('itemCardModal').classList.remove('hidden'); }
+        function openItemCard(id) {
+            const i = db.items.find(x => x.id === id);
+            if(!i) return;
+
+            // 1. Заполняем поля Инфо
+            document.getElementById('cardId').value = i.id;
+            document.getElementById('cardName').value = i.name;
+            document.getElementById('cardManuf').value = i.manuf;
+            document.getElementById('cardCat').value = i.cat;
+            document.getElementById('cardQty').value = i.qty;
+            document.getElementById('cardUnit').value = i.unit;
+            document.getElementById('cardCost').value = i.cost;
+            document.getElementById('cardChars').value = i.chars;
+            document.getElementById('cardImg').value = i.img || '';
+            document.getElementById('cardFile').value = i.file || '';
+
+            // 2. Рендер Истории Операций (Приход/Уход) с цветами
+            const movRows = db.movements
+                .filter(m => m.itemId === i.id)
+                .slice(0, 15) // Берем последние 15
+                .map(m => {
+                    // Определяем цвет и текст
+                    const isIncome = m.type === 'in';
+                    const typeText = isIncome ? 'Приход' : 'Списание';
+                    const typeClass = isIncome ? 'text-green-600' : 'text-red-600';
+                    
+                    return `
+                        <tr class="border-b last:border-0">
+                            <td class="p-2 text-slate-500">${m.date.split(',')[0]}</td>
+                            <td class="p-2 font-bold ${typeClass}">${typeText}</td>
+                            <td class="p-2 text-right font-bold">${isIncome ? '+' : '-'}${m.qty}</td>
+                        </tr>`;
+                }).join('');
+            
+            document.getElementById('cardMovHistory').innerHTML = movRows || '<tr><td colspan="3" class="p-3 text-center text-slate-400">Нет операций</td></tr>';
+
+            // 3. Рендер Проектов (Спецификации) с переводом статусов
+            const specsList = [];
+            db.projects.forEach(p => {
+                (db.specs[p.id] || []).forEach(s => {
+                    const row = s.items.find(x => x.itemId === i.id);
+                    if (row) {
+                        specsList.push({
+                            projName: p.name,
+                            specName: s.name,
+                            status: s.status,
+                            qty: row.qty
+                        });
+                    }
+                });
+            });
+
+            const specRows = specsList.map(x => {
+                // Перевод и стили статусов
+                let statusBadge = '';
+                if(x.status === 'draft') {
+                    statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">В плане (Резерв)</span>';
+                } else {
+                    statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Списано</span>';
+                }
+
+                return `
+                    <tr class="border-b last:border-0">
+                        <td class="p-2">
+                            <div class="font-bold text-slate-700">${x.projName}</div>
+                            <div class="text-[10px] text-slate-400">${x.specName}</div>
+                        </td>
+                        <td class="p-2 text-center">${statusBadge}</td>
+                        <td class="p-2 text-right font-bold">${x.qty}</td>
+                    </tr>`;
+            }).join('');
+
+            document.getElementById('cardSpecHistory').innerHTML = specRows || '<tr><td colspan="3" class="p-3 text-center text-slate-400">Не используется в проектах</td></tr>';
+
+            // Открываем модалку
+            switchModalTab('info');
+            openModal('itemCardModal');
+        }
         function saveItemFromCard() { const i = db.items.find(x => x.id == document.getElementById('cardId').value); i.name=document.getElementById('cardName').value; i.manuf=document.getElementById('cardManuf').value; i.cat=document.getElementById('cardCat').value; i.unit=document.getElementById('cardUnit').value; i.cost=parseFloat(document.getElementById('cardCost').value); i.chars=document.getElementById('cardChars').value; i.img=document.getElementById('cardImg').value; i.file=document.getElementById('cardFile').value; save(); closeModal('itemCardModal'); }
         function switchModalTab(t) { document.getElementById('mview-info').classList.add('hidden'); document.getElementById('mview-history').classList.add('hidden'); document.getElementById('mtab-info').classList.remove('active'); document.getElementById('mtab-history').classList.remove('active'); document.getElementById(`mview-${t}`).classList.remove('hidden'); document.getElementById(`mtab-${t}`).classList.add('active'); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
