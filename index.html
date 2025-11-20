@@ -211,7 +211,9 @@
     </div>
 	
 	<div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp" type="text"></div></div><div class="mt-8 flex justify-end"><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Операции</h4><table class="w-full text-sm text-left border rounded"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardMovHistory"></tbody></table></div><div><h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Проекты</h4><table class="w-full text-sm text-left border rounded"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory"></tbody></table></div></div></div></div></div>
-    <div id="createItemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white p-6 rounded-lg w-full max-w-lg"><h3 class="font-bold text-lg mb-4">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4"><div class="col-span-2"><label class="lbl">Наименование</label><input id="newItemName" class="inp" type="text"></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp" type="text"></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div>
+    <div id="createItemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white p-6 rounded-lg w-full max-w-lg"><h3 class="font-bold text-lg mb-4">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4"><div class="col-span-2"><label class="lbl">Наименование</label><input id="newItemName" class="inp" type="text"></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp" type="text"></div>
+    <div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newItemFile" class="inp" type="text" placeholder="https://..."></div>
+    </div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div>
     <div id="createProjectModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white p-6 rounded-lg w-full max-w-lg"><h3 class="font-bold text-lg mb-4">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4"><div><label class="lbl">Год</label><input id="newPrYear" class="inp" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp" type="number"></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div>
 
     <style> .lbl { display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; margin-bottom: 0.25rem; text-transform: uppercase; } .inp { width: 100%; border: 1px solid #cbd5e1; padding: 0.5rem; border-radius: 0.375rem; font-size: 0.875rem; } .inp:focus { outline: none; border-color: #3b82f6; ring: 2px solid #3b82f6; } </style>
@@ -560,10 +562,15 @@
                 const free = i.qty - res;
                 const freeColor = free < 0 ? 'text-red-600' : (free < 5 ? 'text-orange-600' : 'text-blue-600');
 
+                const fileIcon = i.file ? `<a href="${i.file}" target="_blank" onclick="event.stopPropagation()" class="ml-2 text-slate-400 hover:text-blue-600" title="Скачать файл"><i class="fas fa-file-alt"></i></a>` : '';
+
                 return `
                     <tr onclick="openItemCard(${i.id})" class="border-b hover:bg-blue-50 cursor-pointer transition h-14 group">
                         <td class="px-4 py-2 text-center">${img}</td>
-                        <td class="px-4 py-2 font-medium text-blue-700 group-hover:underline">${i.name}</td>
+                        <td class="px-4 py-2 font-medium text-blue-700 group-hover:underline">
+                            ${i.name}
+                            ${fileIcon}
+                        </td>
                         <td class="px-4 py-2 text-slate-500 hidden md:table-cell">${i.manuf}</td>
                         <td class="px-4 py-2 text-center font-bold text-slate-700">${i.qty}</td>
                         <td class="px-4 py-2 text-center text-orange-500 font-semibold bg-orange-50 rounded hidden sm:table-cell">${res > 0 ? res : '-'}</td>
@@ -653,15 +660,53 @@
                 c.innerHTML += `<div onclick="loadSpec('${s.id}')" class="p-3 border rounded mb-2 cursor-pointer bg-white hover:shadow ${selectedSpecId === s.id ? 'ring-2 ring-blue-400' : ''}"><div class="flex justify-between font-bold text-sm"><span>${s.name}</span><span>${ic}</span></div><div class="text-xs text-slate-500">Позиций: ${s.items.length}</div></div>`;
             });
         }
+        
         function addNewSpecToProject() { 
-            if(!selectedProjectId) return; 
-            const n = prompt("Название:"); 
-            if(!n) return; 
-            if(!db.specs) db.specs = {}; // Инициализация, если удалили
-            if(!db.specs[selectedProjectId]) db.specs[selectedProjectId]=[]; 
-            db.specs[selectedProjectId].push({id:'s_'+Date.now(), name:n, status:'draft', date:null, items:[]}); 
-            save(); 
+            try {
+                if(!selectedProjectId) {
+                    alert("Сначала выберите проект из списка слева!");
+                    return;
+                }
+                
+                const n = prompt("Введите название спецификации (например: Электрика 1 этаж):"); 
+                if(!n) return; 
+
+                // ЗАЩИТА: Убеждаемся, что db.specs это объект, а не null/undefined/array
+                // Это предотвращает ошибку "Cannot set property '...' of undefined"
+                if(!db.specs || typeof db.specs !== 'object' || Array.isArray(db.specs)) {
+                    db.specs = {};
+                }
+
+                // Создаем массив для проекта, если его нет
+                if(!db.specs[selectedProjectId]) {
+                    db.specs[selectedProjectId] = [];
+                }
+
+                const newSpec = {
+                    id: 's_' + Date.now(), 
+                    name: n, 
+                    status: 'draft', 
+                    date: new Date().toLocaleDateString(), 
+                    items: []
+                };
+
+                db.specs[selectedProjectId].push(newSpec); 
+                
+                // Автоматически выбираем новую спецификацию
+                selectedSpecId = newSpec.id;
+                
+                save(); 
+                showToast("Спецификация создана");
+                
+                // Сразу открываем её в редакторе
+                loadSpec(newSpec.id);
+                
+            } catch (e) {
+                console.error(e);
+                alert("Ошибка создания спецификации: " + e.message);
+            }
         }
+
         function loadSpec(sid) {
             selectedSpecId = sid; renderSpecList(selectedProjectId); 
             const s = db.specs[selectedProjectId].find(x => x.id === sid);
@@ -692,7 +737,27 @@
 
         // Modals
         function openCreateItemModal() { document.getElementById('newItemName').value=''; document.getElementById('createItemModal').classList.remove('hidden'); }
-        function createNewItem() { const i = {id:Date.now(), name:document.getElementById('newItemName').value, manuf:document.getElementById('newItemManuf').value, cat:document.getElementById('newItemCat').value||'Разное', qty:parseFloat(document.getElementById('newItemQty').value)||0, unit:document.getElementById('newItemUnit').value, cost:parseFloat(document.getElementById('newItemCost').value)||0, chars:document.getElementById('newItemChars').value, img:document.getElementById('newItemImg').value}; if(!i.name)return; db.items.push(i); if(i.qty>0) db.movements.unshift({date:new Date().toLocaleString(), type:'in', itemId:i.id, itemName:i.name, qty:i.qty}); save(); closeModal('createItemModal'); }
+        
+        // --- ОБНОВЛЕНО: Добавлено поле file при создании ---
+        function createNewItem() { 
+            const i = {
+                id:Date.now(), 
+                name:document.getElementById('newItemName').value, 
+                manuf:document.getElementById('newItemManuf').value, 
+                cat:document.getElementById('newItemCat').value||'Разное', 
+                qty:parseFloat(document.getElementById('newItemQty').value)||0, 
+                unit:document.getElementById('newItemUnit').value, 
+                cost:parseFloat(document.getElementById('newItemCost').value)||0, 
+                chars:document.getElementById('newItemChars').value, 
+                img:document.getElementById('newItemImg').value,
+                file:document.getElementById('newItemFile').value // Новое поле
+            }; 
+            if(!i.name)return; 
+            db.items.push(i); 
+            if(i.qty>0) db.movements.unshift({date:new Date().toLocaleString(), type:'in', itemId:i.id, itemName:i.name, qty:i.qty}); 
+            save(); 
+            closeModal('createItemModal'); 
+        }
         function openCreateProjectModal() { document.getElementById('newPrName').value=''; document.getElementById('createProjectModal').classList.remove('hidden'); }
         function createNewProject() { const p = {id:Date.now(), year:document.getElementById('newPrYear').value, num:document.getElementById('newPrNum').value, name:document.getElementById('newPrName').value, desc:document.getElementById('newPrDesc').value, client:document.getElementById('newPrClient').value, start:document.getElementById('newPrStart').value, end:document.getElementById('newPrEnd').value, cost:parseFloat(document.getElementById('newPrCost').value)||0, status:'active'}; if(!p.name)return; db.projects.push(p); db.specs[p.id]=[]; save(); closeModal('createProjectModal'); }
  
