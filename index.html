@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Склад Online v3.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+	
+	<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+	
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -20,7 +25,7 @@
         .toast.show { transform: translateY(0); opacity: 1; }
         
         /* Лоадер на весь экран */
-        #globalLoader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-col: column; backdrop-filter: blur(2px); }
+        #globalLoader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999; display: none; justify-content: center; align-items: center; flex-col: column; backdrop-filter: blur(2px); }
         .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin {0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); }}
 		/* Кнопка синхронизации */
@@ -39,19 +44,41 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800 relative">
 
+    <!-- Лоадер -->
+    <div id="globalLoader">
+        <div class="spinner mb-4"></div>
+        <div class="text-slate-500 font-medium">Загрузка...</div>
+    </div>
+
+<div id="loginScreen" class="fixed inset-0 bg-slate-900 z-[2000] flex flex-col items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="mb-6"><i class="fas fa-shield-alt text-5xl text-blue-600"></i></div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Вход на Склад</h2>
+            <p class="text-slate-500 mb-6 text-sm">Введите данные сотрудника</p>
+            
+            <input type="email" id="loginEmail" class="w-full border p-3 rounded-lg mb-3 bg-slate-50" placeholder="Email (admin@sklad.ru)" value="admin@sklad.ru">
+            <input type="password" id="loginPass" class="w-full border p-3 rounded-lg mb-6 bg-slate-50" placeholder="Пароль (123456)" value="123456">
+            
+            <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg mb-4">Войти (Firebase)</button>
+            
+            <!-- Кнопка Демо входа -->
+            <button onclick="demoLogin()" class="w-full bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200 transition mb-4 text-sm">Демо вход (без пароля)</button>
+
+            <div id="loginError" class="p-3 bg-red-50 text-red-600 rounded text-sm font-bold hidden border border-red-100 text-left"></div>
+            <div id="techInfo" class="text-[10px] text-slate-300 mt-4 font-mono"></div>
+        </div>
+    </div>
+
+
 <button onclick="syncWithCloud()" id="syncBtn" class="sync-fab sync-clean">
         <i class="fas fa-cloud-upload-alt"></i> 
         <span id="syncText">Синхронизировано</span>
     </button>
 
-    <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbyLI4Us7sAhicC-B_vdFqB9d8F6xDEx6t7x942GagG0Obl7Jp0Oh-7twn1UTtaeZKyh/exec";
-    </script>
 
-    <div id="globalLoader">
-        <div class="spinner mb-2"></div>
-        <div class="text-blue-600 font-bold animate-pulse">Синхронизация с базой...</div>
-    </div>
+
+   
+
 
     <div id="toast" class="toast flex items-center gap-3"><i class="fas fa-check-circle text-green-400"></i><span id="toastMsg">ОК</span></div>
 
@@ -59,40 +86,48 @@
         <div class="max-w-full mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-2 font-bold text-xl text-slate-800">
-                    <i class="fas fa-cloud text-blue-600"></i> Склад Online
+                    <i class="fas fa-cloud text-blue-600"></i> Склад Online <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 ml-2" id="connectionStatus">Offline</span>
                 </div>
-                <nav class="flex space-x-8 h-full">
+                <nav class="flex space-x-8 h-full hidden md:flex">
                     <button onclick="switchTab('warehouse')" id="tab-warehouse" class="tab-btn active h-full px-1 flex items-center font-medium transition">Склад</button>
                     <button onclick="switchTab('movements')" id="tab-movements" class="tab-btn h-full px-1 flex items-center font-medium transition">Приход/Уход</button>
                     <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn h-full px-1 flex items-center font-medium transition">Проекты</button>
                     <button onclick="switchTab('specs')" id="tab-specs" class="tab-btn h-full px-1 flex items-center font-medium transition">Спецификации</button>
                 </nav>
+                <!-- Мобильное меню (упрощено) -->
+                 <nav class="flex space-x-4 h-full md:hidden">
+                    <button onclick="switchTab('warehouse')" class="text-slate-600"><i class="fas fa-boxes"></i></button>
+                    <button onclick="switchTab('projects')" class="text-slate-600"><i class="fas fa-folder"></i></button>
+                </nav>
+
                 <div class="flex items-center gap-2">
-                    <button onclick="init()" class="text-xs text-blue-500 hover:underline mr-2"><i class="fas fa-sync"></i> Обновить</button>
+                    <button onclick="init()" class="text-xs text-blue-500 hover:underline mr-2 hidden md:inline"><i class="fas fa-sync"></i> Обновить</button>
+					<button onclick="logout()" class="text-slate-400 hover:text-red-600 text-xs flex items-center gap-1 ml-4"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+					
                     </div>
             </div>
         </div>
     </header>
 
     <main class="flex-1 overflow-hidden relative bg-slate-100">
-        <div id="view-warehouse" class="view-section h-full flex p-4 gap-4">
-            <div class="flex-1 bg-white rounded-lg shadow border border-slate-200 flex flex-col">
-                <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg">
+        <div id="view-warehouse" class="view-section h-full flex flex-col md:flex-row p-2 md:p-4 gap-4">
+            <div class="flex-1 bg-white rounded-lg shadow border border-slate-200 flex flex-col overflow-hidden">
+                <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg shrink-0">
                     <div class="flex items-center gap-4 w-2/3">
-                        <h2 class="font-bold text-lg whitespace-nowrap">Товары</h2>
+                        <h2 class="font-bold text-lg whitespace-nowrap hidden sm:block">Товары</h2>
                         <div class="relative w-full max-w-md">
                             <i class="fas fa-search absolute left-3 top-2.5 text-slate-400 text-xs"></i>
                             <input type="search" id="warehouseSearch" oninput="renderWarehouse()" placeholder="Поиск..." class="w-full pl-8 pr-4 py-2 border rounded-full text-sm focus:outline-none focus:border-blue-500">
                         </div>
                     </div>
-                    <button onclick="openCreateItemModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Товар</button>
+                    <button onclick="openCreateItemModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Товар</button>
                 </div>
-                <div class="overflow-auto flex-1 p-0"><table class="w-full text-sm text-left text-slate-600"><thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10"><tr><th class="px-4 py-3">Фото</th><th class="px-4 py-3">Наименование</th><th class="px-4 py-3">Производитель</th><th class="px-4 py-3 text-center">Всего</th><th class="px-4 py-3 text-center text-orange-600" title="Резерв">Резерв</th><th class="px-4 py-3 text-center text-blue-600">Свободно</th><th class="px-4 py-3 text-right">Цена</th></tr></thead><tbody id="warehouseTableBody"></tbody></table></div>
+                <div class="overflow-auto flex-1 p-0"><table class="w-full text-sm text-left text-slate-600"><thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0 z-10"><tr><th class="px-4 py-3">Фото</th><th class="px-4 py-3">Наименование</th><th class="px-4 py-3 hidden md:table-cell">Произв.</th><th class="px-4 py-3 text-center">Ост.</th><th class="px-4 py-3 text-center text-orange-600 hidden sm:table-cell" title="Резерв">Рез.</th><th class="px-4 py-3 text-center text-blue-600">Своб.</th><th class="px-4 py-3 text-right">Цена</th></tr></thead><tbody id="warehouseTableBody"></tbody></table></div>
             </div>
-            <div class="w-64 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4"><h3 class="font-bold text-slate-500 uppercase text-xs mb-4">Категории</h3><div id="categoryList" class="space-y-1 overflow-y-auto flex-1"></div></div>
+            <div class="w-full md:w-64 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 shrink-0 h-48 md:h-auto"><h3 class="font-bold text-slate-500 uppercase text-xs mb-4">Категории</h3><div id="categoryList" class="space-y-1 overflow-y-auto flex-1"></div></div>
         </div>
 
-        <div id="view-movements" class="view-section h-full hidden p-4 flex justify-center">
+        <div id="view-movements" class="view-section h-full hidden p-4 flex justify-center overflow-y-auto">
             <div class="w-full max-w-3xl bg-white rounded-lg shadow p-6 h-max">
                 <h2 class="text-xl font-bold mb-6">Движение товаров</h2>
                 <div class="grid grid-cols-1 gap-4 mb-6 bg-slate-50 p-4 rounded border">
@@ -104,20 +139,20 @@
             </div>
         </div>
 
-        <div id="view-projects" class="view-section h-full hidden p-4">
+        <div id="view-projects" class="view-section h-full hidden p-4 flex flex-col">
             <div class="bg-white rounded-lg shadow h-full flex flex-col">
-                <div class="p-4 border-b flex justify-between items-center">
+                <div class="p-4 border-b flex justify-between items-center shrink-0">
                     <h2 class="font-bold text-lg">Реестр проектов</h2>
                     <button onclick="openCreateProjectModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Проект</button>
                 </div>
-                <div class="overflow-auto flex-1"><table class="w-full text-sm text-left text-slate-600"><thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0"><tr><th class="px-4 py-3">Год</th><th class="px-4 py-3">Заявка/Клиент</th><th class="px-4 py-3">Наименование</th><th class="px-4 py-3">Даты</th><th class="px-4 py-3 text-right">Бюджет</th><th class="px-4 py-3 text-center">Статус</th><th class="px-4 py-3 text-right">Действия</th></tr></thead><tbody id="projectsTableBody"></tbody></table></div>
+                <div class="overflow-auto flex-1"><table class="w-full text-sm text-left text-slate-600"><thead class="text-xs text-slate-500 uppercase bg-slate-50 sticky top-0"><tr><th class="px-4 py-3">Год</th><th class="px-4 py-3">Заявка/Клиент</th><th class="px-4 py-3">Наименование</th><th class="px-4 py-3 hidden md:table-cell">Даты</th><th class="px-4 py-3 text-right">Бюджет</th><th class="px-4 py-3 text-center">Статус</th><th class="px-4 py-3 text-right">Действия</th></tr></thead><tbody id="projectsTableBody"></tbody></table></div>
             </div>
         </div>
 
-        <div id="view-specs" class="view-section h-full hidden p-4 gap-4 flex">
-            <div class="w-1/4 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4"><h3 class="font-bold text-slate-700 mb-2 border-b pb-2">1. Активные Проекты</h3><div id="specProjectList" class="space-y-2 overflow-y-auto flex-1 pr-1"></div></div>
-            <div class="w-1/4 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 relative"><h3 class="font-bold text-slate-700 mb-2 border-b pb-2 flex justify-between items-center"><span>2. Спецификации</span><button onclick="addNewSpecToProject()" id="btnAddSpec" class="text-blue-600 text-xs hidden hover:bg-blue-50 p-1 rounded"><i class="fas fa-plus"></i> Добавить</button></h3><div id="specListPlaceholder" class="text-center text-slate-400 mt-10 text-xs">Выберите проект</div><div id="specListContainer" class="hidden space-y-2 overflow-y-auto flex-1 pr-1"></div></div>
-            <div class="flex-1 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 relative">
+        <div id="view-specs" class="view-section h-full hidden p-4 gap-4 flex flex-col md:flex-row">
+            <div class="w-full md:w-1/4 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 h-1/3 md:h-auto"><h3 class="font-bold text-slate-700 mb-2 border-b pb-2">1. Активные Проекты</h3><div id="specProjectList" class="space-y-2 overflow-y-auto flex-1 pr-1"></div></div>
+            <div class="w-full md:w-1/4 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 relative h-1/3 md:h-auto"><h3 class="font-bold text-slate-700 mb-2 border-b pb-2 flex justify-between items-center"><span>2. Спецификации</span><button onclick="addNewSpecToProject()" id="btnAddSpec" class="text-blue-600 text-xs hidden hover:bg-blue-50 p-1 rounded"><i class="fas fa-plus"></i> Добавить</button></h3><div id="specListPlaceholder" class="text-center text-slate-400 mt-10 text-xs">Выберите проект</div><div id="specListContainer" class="hidden space-y-2 overflow-y-auto flex-1 pr-1"></div></div>
+            <div class="flex-1 bg-white rounded-lg shadow border border-slate-200 flex flex-col p-4 relative h-1/3 md:h-auto">
                 <div id="specEditor" class="hidden flex flex-col h-full">
                     
                     <div class="flex justify-between items-center mb-2 border-b pb-2">
@@ -165,7 +200,17 @@
     </main>
 
     <div id="projectDetailsModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white rounded-lg w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl"><div class="p-4 border-b flex justify-between items-center bg-slate-50"><h3 class="font-bold text-lg" id="pdTitle">История</h3><button onclick="closeModal('projectDetailsModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1" id="pdContent"></div></div></div>
-    <div id="itemCardModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl"><div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp"><option value="шт.">шт.</option><option value="м">м</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><input id="cardCost" class="inp" type="number"></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp" rows="3"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="cardImg" class="inp" type="text"></div><div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp" type="text"></div></div><div class="mt-8 flex justify-end"><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Операции</h4><table class="w-full text-sm text-left border rounded"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardMovHistory"></tbody></table></div><div><h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Проекты</h4><table class="w-full text-sm text-left border rounded"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory"></tbody></table></div></div></div></div></div>
+    <div id="itemCardModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl"><div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp"><option value="шт.">шт.</option><option value="м">м</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><input id="cardCost" class="inp" type="number"></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp" rows="3"></textarea></div>
+	
+	
+	<div class="md:col-span-2">
+                            <img id="cardImgPreview" src="" class="w-full h-64 object-contain mb-3 rounded-lg border border-slate-200 bg-slate-50 hidden">
+                            
+                            <label class="lbl">Фото URL</label>
+                            <input id="cardImg" class="inp" type="text" placeholder="https://..." oninput="updateCardPreview()">
+    </div>
+	
+	<div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp" type="text"></div></div><div class="mt-8 flex justify-end"><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Операции</h4><table class="w-full text-sm text-left border rounded"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardMovHistory"></tbody></table></div><div><h4 class="font-bold text-slate-700 mb-2 border-b pb-1">Проекты</h4><table class="w-full text-sm text-left border rounded"><thead class="bg-slate-50 text-xs text-slate-500"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory"></tbody></table></div></div></div></div></div>
     <div id="createItemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white p-6 rounded-lg w-full max-w-lg"><h3 class="font-bold text-lg mb-4">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4"><div class="col-span-2"><label class="lbl">Наименование</label><input id="newItemName" class="inp" type="text"></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp" type="text"></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div>
     <div id="createProjectModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white p-6 rounded-lg w-full max-w-lg"><h3 class="font-bold text-lg mb-4">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4"><div><label class="lbl">Год</label><input id="newPrYear" class="inp" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp" type="number"></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div>
 
@@ -233,36 +278,172 @@
     </div>
 
     <script>
+        // --- 1. НАСТРОЙКИ FIREBASE (Вставь свои данные) ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyChf2f13grceK8sjkPP7dKz6_1YP1RLkZE",
+          authDomain: "warehouse7lamp.firebaseapp.com",
+          databaseURL: "https://warehouse7lamp-default-rtdb.europe-west1.firebasedatabase.app",
+          projectId: "warehouse7lamp",
+          storageBucket: "warehouse7lamp.firebasestorage.app",
+          messagingSenderId: "349274471054",
+          appId: "1:349274471054:web:03302aeb9b42135ae5e7df",
+          measurementId: "G-9NLYY972T8"
+        };
+
+        let auth, dbRef;
+        let isDemoMode = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            dbRef = firebase.database().ref('warehouse_v4');
+            auth = firebase.auth();
+            
+            // Отладка: выводим версию
+            document.getElementById('techInfo').innerText = "SDK Loaded. AppID: " + firebaseConfig.appId.substring(0,15) + "...";
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+            document.getElementById('loginError').innerHTML = "Ошибка инициализации Firebase.<br>Проверьте консоль (F12).<br>" + e.message;
+            document.getElementById('loginError').classList.remove('hidden');
+        }
+
+        // --- 2. ПЕРЕМЕННЫЕ ПРИЛОЖЕНИЯ ---
         let db = { items: [], projects: [], specs: {}, movements: [] };
         let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null;
-        let hasUnsavedChanges = false; // Флаг изменений
+        let hasUnsavedChanges = false;
 
-        // --- НОВАЯ ЛОГИКА СИНХРОНИЗАЦИИ ---
+        // --- 3. ЛОГИКА АВТОРИЗАЦИИ (ГЛАВНЫЙ ВХОД) ---
         
-        async function init() {
-            if(API_URL.includes("ВСТАВЬ")) return alert("Вставь ссылку API в код!");
+        if (auth) {
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('connectionStatus').innerText = "Online (Cloud)";
+                    document.getElementById('connectionStatus').classList.add("text-green-600");
+                    init(false); 
+                } else {
+                    if(!isDemoMode) {
+                        document.getElementById('loginScreen').classList.remove('hidden');
+                        document.getElementById('globalLoader').style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function login() {
+            const em = document.getElementById('loginEmail').value;
+            const pw = document.getElementById('loginPass').value;
+            const err = document.getElementById('loginError');
+            
+            if (!em || !pw) {
+                err.textContent = "Введите почту и пароль!";
+                err.classList.remove('hidden');
+                return;
+            }
+            
+            if (!auth) {
+                err.innerHTML = "Firebase не инициализирован. Попробуйте <b>Демо вход</b>.";
+                err.classList.remove('hidden');
+                return;
+            }
+
+            showLoader(true);
+            err.classList.add('hidden');
+            
+            auth.signInWithEmailAndPassword(em, pw)
+                .then(() => {
+                    console.log("Вход выполнен успешно");
+                })
+                .catch((error) => {
+                    showLoader(false);
+                    console.error("Ошибка входа:", error);
+                    
+                    let msg = `Ошибка (${error.code}): ${error.message}`;
+                    
+                    if (error.code === 'auth/invalid-email') msg = "Некорректный формат Email";
+                    if (error.code === 'auth/user-not-found') msg = "Пользователь не найден. Зарегистрируйте его в консоли Firebase.";
+                    if (error.code === 'auth/wrong-password') msg = "Неверный пароль";
+                    if (error.code === 'auth/network-request-failed') msg = "Нет сети или доступ заблокирован (CORS/Firewall).";
+                    if (error.code === 'auth/operation-not-allowed') msg = "Вход по Email/Пароль отключен в консоли Firebase!";
+                    
+                    err.innerHTML = `<b>Ошибка входа:</b><br>${msg}`;
+                    err.classList.remove('hidden');
+                });
+        }
+        
+        function demoLogin() {
+            isDemoMode = true;
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('connectionStatus').innerText = "Demo (Local)";
+            document.getElementById('connectionStatus').classList.add("text-orange-500");
+            showToast("Демо режим: данные не сохраняются в облако");
+            
+            // Создаем фиктивные данные для теста, если база пустая
+            seedData();
+            init(true); // force load local
+        }
+
+        function logout() {
+            if(hasUnsavedChanges && !confirm("Есть несохраненные данные. Точно выйти?")) return;
+            
+            if (isDemoMode) {
+                isDemoMode = false;
+                location.reload();
+            } else if (auth) {
+                auth.signOut().then(() => location.reload());
+            }
+        }
+
+        // --- 4. ЗАГРУЗКА И СИНХРОНИЗАЦИЯ (FIREBASE) ---
+
+        async function init(force = false) {
             showLoader(true);
             try {
-                // Пробуем скачать свежее из облака при старте
-                const res = await fetch(API_URL);
-                const data = await res.json();
-                if(data && data.items) {
-                    db = data;
-                    if(Array.isArray(db.specs)) db.specs = {}; 
-                    // Сохраняем в память, но говорим, что изменений нет (мы только что скачали)
-                    localStorage.setItem('wms_v3_data', JSON.stringify(db));
-                    hasUnsavedChanges = false;
+                if (!isDemoMode && dbRef) {
+                    const snapshot = await dbRef.get();
+                    if (snapshot.exists()) {
+                        const cloudData = snapshot.val();
+                        if (!hasUnsavedChanges || force) {
+                            db = cloudData;
+                            // ВАЖНО: Инициализируем пустые разделы, если их нет в базе
+                            if(!db.items) db.items = [];
+                            if(!db.projects) db.projects = [];
+                            if(!db.movements) db.movements = [];
+                            if(!db.specs || Array.isArray(db.specs)) db.specs = {}; 
+
+                            localStorage.setItem('wms_v4_data', JSON.stringify(db));
+                            hasUnsavedChanges = false;
+                        }
+                    } else {
+                        seedData();
+                    }
                 } else {
-                    seedData();
+                     // Demo or Offline
+                     const saved = localStorage.getItem('wms_v4_data');
+                     if(saved) {
+                         db = JSON.parse(saved);
+                         // Подстраховка для локальных данных
+                         if(!db.items) db.items = [];
+                         if(!db.projects) db.projects = [];
+                         if(!db.movements) db.movements = [];
+                         if(!db.specs || Array.isArray(db.specs)) db.specs = {};
+                     }
+                     else seedData();
                 }
+                
                 refreshAll();
                 updateSyncUI();
+
             } catch(e) {
-                // Если нет интернета - грузим из памяти
-                const saved = localStorage.getItem('wms_v3_data');
+                console.error(e);
+                const saved = localStorage.getItem('wms_v4_data');
                 if(saved) {
                     db = JSON.parse(saved);
-                    showToast("Оффлайн режим");
+                     // Подстраховка на случай ошибки загрузки
+                     if(!db.items) db.items = [];
+                     if(!db.projects) db.projects = [];
+                     if(!db.movements) db.movements = [];
+                     if(!db.specs || Array.isArray(db.specs)) db.specs = {};
+                    showToast("Оффлайн режим (ошибка сети)");
                 }
                 refreshAll();
             } finally {
@@ -270,157 +451,127 @@
             }
         }
 
-        // Эта функция теперь вызывается кнопкой
         async function syncWithCloud() {
-            if(!hasUnsavedChanges && !confirm("Изменений не было. Все равно отправить в облако?")) return;
+            if (isDemoMode) {
+                alert("В демо-режиме сохранение в облако недоступно.");
+                return;
+            }
+            if(!hasUnsavedChanges && !confirm("Изменений не было. Перезаписать облако текущими данными?")) return;
             
             showLoader(true);
             try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify(db) });
-                hasUnsavedChanges = false; // Сбрасываем флаг
+                await dbRef.set(db);
+                hasUnsavedChanges = false;
                 updateSyncUI();
-                showToast("Успешно синхронизировано!");
+                showToast("Данные сохранены в облаке!");
             } catch(e) {
-                alert("Ошибка соединения с Google!");
+                alert("Ошибка сохранения! " + e.message);
             } finally {
                 showLoader(false);
             }
         }
 
-        // Эту функцию вызывают все кнопки (Добавить, Удалить и т.д.)
-        // Она больше НЕ отправляет в интернет, только в память телефона
-        // Эту функцию вызывают все кнопки
         function save() {
-            // 1. Сохраняем в память телефона
-            localStorage.setItem('wms_v3_data', JSON.stringify(db));
-            
-            // 2. Ставим флаг, что есть изменения
-            hasUnsavedChanges = true; 
+            localStorage.setItem('wms_v4_data', JSON.stringify(db));
+            hasUnsavedChanges = true;
             updateSyncUI();
-
-            // 3. ВАЖНО: Мгновенно обновляем экран!
-            refreshAll(); 
+            refreshAll();
         }
 
+        // --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
         function updateSyncUI() {
             const btn = document.getElementById('syncBtn');
             const txt = document.getElementById('syncText');
             if(hasUnsavedChanges) {
-                btn.className = "sync-fab sync-dirty";
-                txt.textContent = "Сохранить изменения!";
+                btn.className = "sync-fab sync-dirty"; 
+                txt.textContent = "Нажмите для сохранения";
             } else {
-                btn.className = "sync-fab sync-clean";
+                btn.className = "sync-fab sync-clean"; 
                 txt.textContent = "Синхронизировано";
             }
         }
 
-        function refreshAll() {
-            renderCategoryList();
-            renderWarehouse();
-            renderDatalists();
-            renderProjects();
-            if(selectedProjectId) { renderSpecProjectList(); renderSpecList(selectedProjectId); }
-            if(selectedSpecId) loadSpec(selectedSpecId);
-            renderHistoryTable();
+        function showLoader(v){const el = document.getElementById('globalLoader'); if(el) el.style.display=v?'flex':'none';}
+        function showToast(m){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+        function refreshAll(){ renderCategoryList(); renderWarehouse(); renderDatalists(); renderProjects(); if(selectedProjectId){renderSpecProjectList();renderSpecList(selectedProjectId);} if(selectedSpecId)loadSpec(selectedSpecId); renderHistoryTable(); }
+        
+        function seedData(){ 
+            // Инициализация с гарантированно корректной структурой
+            db = {
+                items: [
+                    {id: 1, name: "Кабель ВВГнг 3х1.5", manuf: "Севкабель", cat: "Электрика", qty: 100, unit: "м", cost: 45, img: ""},
+                    {id: 2, name: "Розетка Schneider Atlas", manuf: "Schneider", cat: "Электрика", qty: 50, unit: "шт", cost: 250, img: ""}
+                ],
+                projects: [],
+                specs: {}, // Это обязательно должно быть объектом
+                movements: []
+            };
         }
-
-        function showLoader(vis) { document.getElementById('globalLoader').style.display = vis ? 'flex' : 'none'; }
-        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toastMsg').textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-        function resetData() { if(confirm("Удалить ВСЕ данные из облака?")) { db = { items: [], projects: [], specs: {}, movements: [] }; save(); } }
-        function seedData() { /* Пустая заглушка, чтобы не затирать, если что */ }
-
-        // --- ЛОГИКА (Точно такая же как в v3.0, но с вызовом save() который теперь async) ---
         
-        function switchTab(t) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`tab-${t}`).classList.add('active'); if(t==='projects') renderProjects(); if(t==='specs') renderSpecProjectList(); if(t==='warehouse') {renderCategoryList(); renderWarehouse();} if(t==='movements') renderHistoryTable(); }
+        function resetData(){ if(confirm("ВНИМАНИЕ: Это очистит базу в облаке для ВСЕХ. Продолжить?")) { db={items:[],projects:[],specs:{},movements:[]}; syncWithCloud(); } }
         
-        // Warehouse
-        function getReserve(itemId) { let r = 0; Object.values(db.specs).flat().forEach(s => { if(s.status === 'draft') { const l = s.items.find(x => x.itemId === itemId); if(l) r += l.qty; } }); return r; }
-        // --- ФУНКЦИИ КАТЕГОРИЙ (ИСПРАВЛЕННЫЕ) ---
-
+        function switchTab(t) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); const btn = document.getElementById(`tab-${t}`); if(btn) btn.classList.add('active'); if(t==='projects') renderProjects(); if(t==='specs') renderSpecProjectList(); if(t==='warehouse') {renderCategoryList(); renderWarehouse();} if(t==='movements') renderHistoryTable(); }
+        
+        function getReserve(itemId) { 
+            let r = 0; 
+            // ИСПРАВЛЕНИЕ: Безопасный доступ к db.specs
+            const specs = db.specs || {};
+            Object.values(specs).flat().forEach(s => { 
+                if(s.status === 'draft') { 
+                    const l = s.items.find(x => x.itemId === itemId); 
+                    if(l) r += l.qty; 
+                } 
+            }); 
+            return r; 
+        }
+        
         function renderCategoryList() {
-            // Защита от ошибок, если база еще не загрузилась
+            // ИСПРАВЛЕНИЕ: Проверка на db.items
             if (!db || !db.items) return;
-
             const cats = [...new Set(db.items.map(i => i.cat))].sort();
             const list = document.getElementById('categoryList');
-            
             list.innerHTML = '';
-
-            // 1. Рисуем кнопку "Все"
-            // Если выбрано 'all' - синий фон, иначе серый текст
-            const allClass = currentFilterCat === 'all' 
-                ? 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600' 
-                : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600';
-            
-            list.innerHTML += `
-                <div onclick="filterCat('all')" 
-                     class="p-2 rounded cursor-pointer transition mb-1 text-sm ${allClass}">
-                     Все категории
-                </div>`;
-
-            // 2. Рисуем остальные категории
+            const allClass = currentFilterCat === 'all' ? 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600';
+            list.innerHTML += `<div onclick="filterCat('all')" class="p-2 rounded cursor-pointer transition mb-1 text-sm ${allClass}">Все категории</div>`;
             cats.forEach(c => {
-                const activeClass = currentFilterCat === c 
-                    ? 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600' 
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600';
-                
-                list.innerHTML += `
-                    <div onclick="filterCat('${c}')" 
-                         class="p-2 rounded cursor-pointer transition mb-1 text-sm ${activeClass}">
-                         ${c}
-                    </div>`;
+                const activeClass = currentFilterCat === c ? 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600';
+                list.innerHTML += `<div onclick="filterCat('${c}')" class="p-2 rounded cursor-pointer transition mb-1 text-sm ${activeClass}">${c}</div>`;
             });
-
-            // 3. Обновляем выпадающий список в создании товара (чтобы там тоже были эти категории)
             const dl = document.getElementById('catDataList');
-            if (dl) {
-                dl.innerHTML = '';
-                cats.forEach(c => dl.innerHTML += `<option value="${c}">`);
-            }
+            if (dl) { dl.innerHTML = ''; cats.forEach(c => dl.innerHTML += `<option value="${c}">`); }
         }
 
-        function filterCat(cat) {
-            currentFilterCat = cat; // Запоминаем выбор
-            renderCategoryList();   // Перерисовываем список (чтобы переключить подсветку)
-            renderWarehouse();      // Перерисовываем таблицу товаров
-        }
+        function filterCat(cat) { currentFilterCat = cat; renderCategoryList(); renderWarehouse(); }
+        
         function renderWarehouse() {
             const tbody = document.getElementById('warehouseTableBody'); 
             const q = document.getElementById('warehouseSearch').value.toLowerCase();
-            
-            // 1. Фильтруем данные
-            const filtered = db.items.filter(i => {
+            // ИСПРАВЛЕНИЕ: Проверка на db.items
+            const items = db.items || [];
+            const filtered = items.filter(i => {
                 const matchCat = currentFilterCat === 'all' || i.cat === currentFilterCat;
                 const matchSearch = i.name.toLowerCase().includes(q) || i.manuf.toLowerCase().includes(q);
                 return matchCat && matchSearch;
             });
 
-            // 2. Собираем HTML одной большой строкой (это в 100 раз быстрее, чем +=)
             const htmlRows = filtered.map(i => {
-                const img = i.img 
-                    ? `<img src="${i.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото">` 
-                    : '<span class="text-slate-300">-</span>';
-                
+                const img = i.img ? `<img src="${i.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото" onerror="this.src='https://placehold.co/40'">` : '<span class="text-slate-300">-</span>';
                 const res = getReserve(i.id); 
                 const free = i.qty - res;
-                
-                // Цвет остатка: красный если меньше 0, оранжевый если меньше 5, иначе синий
                 const freeColor = free < 0 ? 'text-red-600' : (free < 5 ? 'text-orange-600' : 'text-blue-600');
 
                 return `
                     <tr onclick="openItemCard(${i.id})" class="border-b hover:bg-blue-50 cursor-pointer transition h-14 group">
                         <td class="px-4 py-2 text-center">${img}</td>
                         <td class="px-4 py-2 font-medium text-blue-700 group-hover:underline">${i.name}</td>
-                        <td class="px-4 py-2 text-slate-500">${i.manuf}</td>
+                        <td class="px-4 py-2 text-slate-500 hidden md:table-cell">${i.manuf}</td>
                         <td class="px-4 py-2 text-center font-bold text-slate-700">${i.qty}</td>
-                        <td class="px-4 py-2 text-center text-orange-500 font-semibold bg-orange-50 rounded">${res > 0 ? res : '-'}</td>
+                        <td class="px-4 py-2 text-center text-orange-500 font-semibold bg-orange-50 rounded hidden sm:table-cell">${res > 0 ? res : '-'}</td>
                         <td class="px-4 py-2 text-center font-bold ${freeColor}">${free}</td>
                         <td class="px-4 py-2 text-right text-sm text-slate-600">${i.cost.toLocaleString()} ₽</td>
                     </tr>
                 `;
-            }).join(''); // Склеиваем массив в одну строку
-
-            // 3. Вставляем всё разом
+            }).join('');
             tbody.innerHTML = htmlRows || '<tr><td colspan="7" class="p-8 text-center text-slate-400">Ничего не найдено</td></tr>';
         }
 
@@ -433,39 +584,24 @@
             db.movements.unshift({ date: new Date().toLocaleString(), type, itemId: item.id, itemName: item.name, qty });
             save(); showToast('Проведено'); document.getElementById('movItemInput').value = '';
         }
-        function renderHistoryTable() { const t = document.getElementById('movementHistory'); t.innerHTML = ''; db.movements.slice(0, 50).forEach(m => t.innerHTML += `<tr class="border-b"><td class="p-2 text-slate-500">${m.date}</td><td class="p-2">${m.itemName}</td><td class="p-2 text-right font-bold ${m.type==='in'?'text-green-600':'text-red-600'}">${m.type==='in'?'+':'-'}${m.qty}</td></tr>`); }
-        function renderDatalists() { const dl = document.getElementById('itemList'); dl.innerHTML = ''; db.items.forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${i.qty}</option>`); }
+        function renderHistoryTable() { const t = document.getElementById('movementHistory'); t.innerHTML = ''; (db.movements || []).slice(0, 50).forEach(m => t.innerHTML += `<tr class="border-b"><td class="p-2 text-slate-500">${m.date}</td><td class="p-2">${m.itemName}</td><td class="p-2 text-right font-bold ${m.type==='in'?'text-green-600':'text-red-600'}">${m.type==='in'?'+':'-'}${m.qty}</td></tr>`); }
+        function renderDatalists() { const dl = document.getElementById('itemList'); dl.innerHTML = ''; (db.items || []).forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${i.qty}</option>`); }
 
         // Projects
        function renderProjects() {
             const tbody = document.getElementById('projectsTableBody'); 
             tbody.innerHTML = '';
-            const sorted = [...db.projects].sort((a,b) => b.id - a.id);
-            
+            const sorted = [...(db.projects || [])].sort((a,b) => b.id - a.id);
             sorted.forEach(p => {
                 const isClosed = p.status === 'closed';
-                const statusHtml = isClosed 
-                    ? '<span class="px-2 py-1 rounded text-xs font-bold bg-slate-200 text-slate-500">Закрыт</span>' 
-                    : '<span class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-800">В работе</span>';
-                
-                // Обрати внимание на onclick="event.stopPropagation(); ..."
-                // Это нужно, чтобы при нажатии на кнопку "Закрыть" не открывалась карточка проекта одновременно.
-                const actionBtn = isClosed 
-                    ? `<button onclick="event.stopPropagation(); viewClosedProject(${p.id})" class="text-slate-500 hover:text-blue-600 z-10 relative" title="История списаний"><i class="fas fa-eye"></i></button>`
-                    : `<button onclick="event.stopPropagation(); closeProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs border border-red-200 px-2 py-1 rounded hover:bg-red-50 z-10 relative">Закрыть</button>`;
-
+                const statusHtml = isClosed ? '<span class="px-2 py-1 rounded text-xs font-bold bg-slate-200 text-slate-500">Закрыт</span>' : '<span class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-800">В работе</span>';
+                const actionBtn = isClosed ? `<button onclick="event.stopPropagation(); viewClosedProject(${p.id})" class="text-slate-500 hover:text-blue-600 z-10 relative"><i class="fas fa-eye"></i></button>` : `<button onclick="event.stopPropagation(); closeProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs border border-red-200 px-2 py-1 rounded hover:bg-red-50 z-10 relative">Закрыть</button>`;
                 tbody.innerHTML += `
                     <tr onclick="openProjectCard(${p.id})" class="border-b hover:bg-blue-50 cursor-pointer transition h-16 ${isClosed ? 'opacity-60 bg-slate-50' : ''}">
                         <td class="px-4 py-3">${p.year}</td>
-                        <td class="px-4 py-3">
-                            <div class="font-bold">${p.num}</div>
-                            <div class="text-xs text-slate-500">${p.client}</div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="font-bold text-blue-800 hover:underline">${p.name}</div>
-                            <div class="text-xs text-slate-500 truncate max-w-[200px]">${p.desc || '-'}</div>
-                        </td>
-                        <td class="px-4 py-3 text-xs text-slate-500">${p.start} <br> ${p.end}</td>
+                        <td class="px-4 py-3"><div class="font-bold">${p.num}</div><div class="text-xs text-slate-500">${p.client}</div></td>
+                        <td class="px-4 py-3"><div class="font-bold text-blue-800 hover:underline">${p.name}</div><div class="text-xs text-slate-500 truncate max-w-[200px]">${p.desc || '-'}</div></td>
+                        <td class="px-4 py-3 text-xs text-slate-500 hidden md:table-cell">${p.start} <br> ${p.end}</td>
                         <td class="px-4 py-3 text-right">${p.cost.toLocaleString()}</td>
                         <td class="px-4 py-3 text-center">${statusHtml}</td>
                         <td class="px-4 py-3 text-right">${actionBtn}</td>
@@ -476,7 +612,8 @@
         function closeProject(pid) {
             const p = db.projects.find(x => x.id === pid);
             if(!confirm(`Закрыть проект "${p.name}"?`)) return;
-            const drafts = (db.specs[pid]||[]).filter(s => s.status === 'draft');
+            // ИСПРАВЛЕНИЕ: Безопасный доступ к db.specs
+            const drafts = ((db.specs || {})[pid]||[]).filter(s => s.status === 'draft');
             let err = null; 
             drafts.forEach(s => s.items.forEach(r => { const i = db.items.find(x => x.id === r.itemId); if(i.qty < r.qty) err = `Нехватка: ${i.name}`; }));
             if(err) return alert(err);
@@ -487,7 +624,8 @@
             p.status = 'closed'; save(); showToast('Проект закрыт');
         }
         function viewClosedProject(pid) {
-            const p = db.projects.find(x => x.id === pid); const sp = db.specs[pid] || [];
+            // ИСПРАВЛЕНИЕ: Безопасный доступ к db.specs
+            const p = db.projects.find(x => x.id === pid); const sp = (db.specs || {})[pid] || [];
             document.getElementById('pdTitle').textContent = p.name; const c = document.getElementById('pdContent'); c.innerHTML = '';
             if(!sp.length) c.innerHTML = 'Пусто';
             sp.forEach(s => {
@@ -500,22 +638,33 @@
         // Specs
         function renderSpecProjectList() {
             const l = document.getElementById('specProjectList'); l.innerHTML = '';
-            db.projects.filter(p => p.status === 'active').sort((a,b) => b.id - a.id).forEach(p => {
-                const c = (db.specs[p.id]||[]).length;
+            // ИСПРАВЛЕНИЕ: Безопасный доступ к db.projects и db.specs
+            (db.projects || []).filter(p => p.status === 'active').sort((a,b) => b.id - a.id).forEach(p => {
+                const c = ((db.specs || {})[p.id]||[]).length;
                 l.innerHTML += `<div onclick="selectSpecProject(${p.id})" class="p-3 border-b cursor-pointer hover:bg-blue-50 ${selectedProjectId === p.id ? 'bg-blue-100 border-l-4 border-l-blue-600' : ''}"><div class="font-bold text-sm flex justify-between">${p.name}<span class="bg-slate-200 text-slate-600 px-1 rounded text-[10px]">[${c}]</span></div><div class="text-xs text-slate-500 mt-1">${p.num}</div></div>`;
             });
         }
         function selectSpecProject(pid) { selectedProjectId = pid; selectedSpecId = null; renderSpecProjectList(); renderSpecList(pid); document.getElementById('specEditor').classList.add('hidden'); document.getElementById('specContentPlaceholder').classList.remove('hidden'); }
         function renderSpecList(pid) {
             const c = document.getElementById('specListContainer'); c.innerHTML = ''; c.classList.remove('hidden'); document.getElementById('specListPlaceholder').classList.add('hidden'); document.getElementById('btnAddSpec').classList.remove('hidden');
-            (db.specs[pid]||[]).forEach(s => {
+            // ИСПРАВЛЕНИЕ: Безопасный доступ
+            ((db.specs || {})[pid]||[]).forEach(s => {
                 const ic = s.status === 'committed' ? '<i class="fas fa-lock text-red-500"></i>' : '<i class="fas fa-pen text-green-500"></i>';
                 c.innerHTML += `<div onclick="loadSpec('${s.id}')" class="p-3 border rounded mb-2 cursor-pointer bg-white hover:shadow ${selectedSpecId === s.id ? 'ring-2 ring-blue-400' : ''}"><div class="flex justify-between font-bold text-sm"><span>${s.name}</span><span>${ic}</span></div><div class="text-xs text-slate-500">Позиций: ${s.items.length}</div></div>`;
             });
         }
-        function addNewSpecToProject() { if(!selectedProjectId) return; const n = prompt("Название:"); if(!n) return; if(!db.specs[selectedProjectId]) db.specs[selectedProjectId]=[]; db.specs[selectedProjectId].push({id:'s_'+Date.now(), name:n, status:'draft', date:null, items:[]}); save(); }
+        function addNewSpecToProject() { 
+            if(!selectedProjectId) return; 
+            const n = prompt("Название:"); 
+            if(!n) return; 
+            if(!db.specs) db.specs = {}; // Инициализация, если удалили
+            if(!db.specs[selectedProjectId]) db.specs[selectedProjectId]=[]; 
+            db.specs[selectedProjectId].push({id:'s_'+Date.now(), name:n, status:'draft', date:null, items:[]}); 
+            save(); 
+        }
         function loadSpec(sid) {
-            selectedSpecId = sid; renderSpecList(selectedProjectId); const s = db.specs[selectedProjectId].find(x => x.id === sid);
+            selectedSpecId = sid; renderSpecList(selectedProjectId); 
+            const s = db.specs[selectedProjectId].find(x => x.id === sid);
             document.getElementById('specEditor').classList.remove('hidden'); document.getElementById('specContentPlaceholder').classList.add('hidden');
             document.getElementById('specTitle').textContent = s.name; document.getElementById('specSubtitle').textContent = s.status==='committed'?'ЗАКРЫТА':'ЧЕРНОВИК';
             if(s.status==='committed') { document.getElementById('btnCommitSpec').classList.add('hidden'); document.getElementById('specAddPanel').classList.add('hidden'); }
@@ -541,16 +690,15 @@
             s.status = 'committed'; s.date = new Date().toLocaleDateString(); save(); showToast('Списано');
         }
 
-        // Modals & Items (Simplified for brevity, same logic)
+        // Modals
         function openCreateItemModal() { document.getElementById('newItemName').value=''; document.getElementById('createItemModal').classList.remove('hidden'); }
         function createNewItem() { const i = {id:Date.now(), name:document.getElementById('newItemName').value, manuf:document.getElementById('newItemManuf').value, cat:document.getElementById('newItemCat').value||'Разное', qty:parseFloat(document.getElementById('newItemQty').value)||0, unit:document.getElementById('newItemUnit').value, cost:parseFloat(document.getElementById('newItemCost').value)||0, chars:document.getElementById('newItemChars').value, img:document.getElementById('newItemImg').value}; if(!i.name)return; db.items.push(i); if(i.qty>0) db.movements.unshift({date:new Date().toLocaleString(), type:'in', itemId:i.id, itemName:i.name, qty:i.qty}); save(); closeModal('createItemModal'); }
         function openCreateProjectModal() { document.getElementById('newPrName').value=''; document.getElementById('createProjectModal').classList.remove('hidden'); }
         function createNewProject() { const p = {id:Date.now(), year:document.getElementById('newPrYear').value, num:document.getElementById('newPrNum').value, name:document.getElementById('newPrName').value, desc:document.getElementById('newPrDesc').value, client:document.getElementById('newPrClient').value, start:document.getElementById('newPrStart').value, end:document.getElementById('newPrEnd').value, cost:parseFloat(document.getElementById('newPrCost').value)||0, status:'active'}; if(!p.name)return; db.projects.push(p); db.specs[p.id]=[]; save(); closeModal('createProjectModal'); }
+ 
         function openItemCard(id) {
             const i = db.items.find(x => x.id === id);
             if(!i) return;
-
-            // 1. Заполняем поля Инфо
             document.getElementById('cardId').value = i.id;
             document.getElementById('cardName').value = i.name;
             document.getElementById('cardManuf').value = i.manuf;
@@ -559,83 +707,60 @@
             document.getElementById('cardUnit').value = i.unit;
             document.getElementById('cardCost').value = i.cost;
             document.getElementById('cardChars').value = i.chars;
-            document.getElementById('cardImg').value = i.img || '';
+            document.getElementById('cardImg').value = i.img || ''; 
             document.getElementById('cardFile').value = i.file || '';
 
-            // 2. Рендер Истории Операций (Приход/Уход) с цветами
-            const movRows = db.movements
+            updateCardPreview(); 
+
+            document.getElementById('cardMovHistory').innerHTML = (db.movements || [])
                 .filter(m => m.itemId === i.id)
-                .slice(0, 15) // Берем последние 15
-                .map(m => {
-                    // Определяем цвет и текст
-                    const isIncome = m.type === 'in';
-                    const typeText = isIncome ? 'Приход' : 'Списание';
-                    const typeClass = isIncome ? 'text-green-600' : 'text-red-600';
-                    
-                    return `
-                        <tr class="border-b last:border-0">
-                            <td class="p-2 text-slate-500">${m.date.split(',')[0]}</td>
-                            <td class="p-2 font-bold ${typeClass}">${typeText}</td>
-                            <td class="p-2 text-right font-bold">${isIncome ? '+' : '-'}${m.qty}</td>
-                        </tr>`;
-                }).join('');
-            
-            document.getElementById('cardMovHistory').innerHTML = movRows || '<tr><td colspan="3" class="p-3 text-center text-slate-400">Нет операций</td></tr>';
-
-            // 3. Рендер Проектов (Спецификации) с переводом статусов
-            const specsList = [];
-            db.projects.forEach(p => {
-                (db.specs[p.id] || []).forEach(s => {
-                    const row = s.items.find(x => x.itemId === i.id);
-                    if (row) {
-                        specsList.push({
-                            projName: p.name,
-                            specName: s.name,
-                            status: s.status,
-                            qty: row.qty
-                        });
-                    }
-                });
-            });
-
-            const specRows = specsList.map(x => {
-                // Перевод и стили статусов
-                let statusBadge = '';
-                if(x.status === 'draft') {
-                    statusBadge = '<span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-bold uppercase">В плане (Резерв)</span>';
-                } else {
-                    statusBadge = '<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold uppercase">Списано</span>';
-                }
-
-                return `
+                .slice(0, 10)
+                .map(m => `
                     <tr class="border-b last:border-0">
-                        <td class="p-2">
-                            <div class="font-bold text-slate-700">${x.projName}</div>
-                            <div class="text-[10px] text-slate-400">${x.specName}</div>
-                        </td>
-                        <td class="p-2 text-center">${statusBadge}</td>
-                        <td class="p-2 text-right font-bold">${x.qty}</td>
-                    </tr>`;
-            }).join('');
+                        <td class="p-2 text-slate-500">${m.date.split(',')[0]}</td>
+                        <td class="p-2 font-bold ${m.type==='in'?'text-green-600':'text-red-600'}">${m.type==='in'?'Приход':'Списание'}</td>
+                        <td class="p-2 text-right">${m.qty}</td>
+                    </tr>`).join('') || '<tr><td colspan="3" class="p-2 text-center text-slate-400">Нет операций</td></tr>';
 
-            document.getElementById('cardSpecHistory').innerHTML = specRows || '<tr><td colspan="3" class="p-3 text-center text-slate-400">Не используется в проектах</td></tr>';
+            const specs = []; 
+            (db.projects || []).forEach(p => { 
+                ((db.specs || {})[p.id]||[]).forEach(s => { 
+                    const r = s.items.find(x => x.itemId === i.id); 
+                    if (r) specs.push({p:p.name, s:s.name, st:s.status, q:r.qty}) 
+                }) 
+            });
+            
+            document.getElementById('cardSpecHistory').innerHTML = specs.map(x => `
+                <tr class="border-b last:border-0">
+                    <td class="p-2 font-medium text-slate-700">${x.p}<div class="text-[10px] text-slate-400">${x.s}</div></td>
+                    <td class="p-2 text-center">${x.st==='draft'?'<span class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px]">План</span>':'<span class="bg-red-100 text-red-600 px-2 py-0.5 rounded text-[10px]">Списан</span>'}</td>
+                    <td class="p-2 text-right font-bold">${x.q}</td>
+                </tr>`).join('') || '<tr><td colspan="3" class="p-2 text-center text-slate-400">Нет проектов</td></tr>';
 
-            // Открываем модалку
             switchModalTab('info');
             openModal('itemCardModal');
         }
+
+        function updateCardPreview() {
+            const url = document.getElementById('cardImg').value;
+            const imgEl = document.getElementById('cardImgPreview');
+            if (url && url.length > 5) {
+                imgEl.src = url;
+                imgEl.classList.remove('hidden');
+                imgEl.onerror = function() { this.classList.add('hidden'); };
+            } else {
+                imgEl.classList.add('hidden');
+            }
+        }
+		
         function saveItemFromCard() { const i = db.items.find(x => x.id == document.getElementById('cardId').value); i.name=document.getElementById('cardName').value; i.manuf=document.getElementById('cardManuf').value; i.cat=document.getElementById('cardCat').value; i.unit=document.getElementById('cardUnit').value; i.cost=parseFloat(document.getElementById('cardCost').value); i.chars=document.getElementById('cardChars').value; i.img=document.getElementById('cardImg').value; i.file=document.getElementById('cardFile').value; save(); closeModal('itemCardModal'); }
         function switchModalTab(t) { document.getElementById('mview-info').classList.add('hidden'); document.getElementById('mview-history').classList.add('hidden'); document.getElementById('mtab-info').classList.remove('active'); document.getElementById('mtab-history').classList.remove('active'); document.getElementById(`mview-${t}`).classList.remove('hidden'); document.getElementById(`mtab-${t}`).classList.add('active'); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-// --- ЛОГИКА КАРТОЧКИ ПРОЕКТА ---
-
         function openProjectCard(id) {
             const p = db.projects.find(x => x.id === id);
             if(!p) return;
-
-            // Заполняем поля
             document.getElementById('pcId').value = p.id;
             document.getElementById('pcYear').value = p.year;
             document.getElementById('pcNum').value = p.num;
@@ -645,8 +770,6 @@
             document.getElementById('pcStart').value = p.start;
             document.getElementById('pcEnd').value = p.end;
             document.getElementById('pcCost').value = p.cost;
-
-            // Статус
             const stEl = document.getElementById('pcStatus');
             if(p.status === 'active') {
                 stEl.textContent = 'В РАБОТЕ';
@@ -655,13 +778,11 @@
                 stEl.textContent = 'ЗАКРЫТ';
                 stEl.className = 'font-bold px-2 py-1 rounded text-sm bg-slate-200 text-slate-600';
             }
-
-            // Заполняем вкладку Спецификации
-            const specs = db.specs[p.id] || [];
+            // ИСПРАВЛЕНИЕ: Безопасный доступ к db.specs
+            const specs = (db.specs || {})[p.id] || [];
             const tbody = document.getElementById('pcSpecsBody');
             tbody.innerHTML = '';
             let totalProjectSum = 0;
-
             if(specs.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400">Нет спецификаций</td></tr>';
             } else {
@@ -672,11 +793,7 @@
                         if(item) specSum += item.cost * r.qty;
                     });
                     totalProjectSum += specSum;
-
-                    const statusBadge = s.status === 'committed' 
-                        ? '<span class="text-red-500 font-bold text-xs">Списана</span>' 
-                        : '<span class="text-green-600 font-bold text-xs">В работе</span>';
-
+                    const statusBadge = s.status === 'committed' ? '<span class="text-red-500 font-bold text-xs">Списана</span>' : '<span class="text-green-600 font-bold text-xs">В работе</span>';
                     tbody.innerHTML += `
                         <tr class="border-b last:border-0">
                             <td class="px-4 py-2 font-medium">${s.name}</td>
@@ -688,8 +805,6 @@
                 });
             }
             document.getElementById('pcTotalSpecsCost').textContent = totalProjectSum.toLocaleString() + ' ₽';
-
-            // Открываем
             switchProjectTab('info');
             openModal('projectCardModal');
         }
@@ -706,9 +821,8 @@
                 p.start = document.getElementById('pcStart').value;
                 p.end = document.getElementById('pcEnd').value;
                 p.cost = parseFloat(document.getElementById('pcCost').value) || 0;
-                
-                save(); // Отправка в облако
-                renderProjects(); // Обновление таблицы
+                save(); 
+                renderProjects(); 
                 closeModal('projectCardModal');
                 showToast('Проект обновлен');
             }
@@ -719,12 +833,9 @@
             document.getElementById('pview-specs').classList.add('hidden');
             document.getElementById('ptab-info').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer";
             document.getElementById('ptab-specs').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer";
-            
             document.getElementById(`pview-${tab}`).classList.remove('hidden');
             document.getElementById(`ptab-${tab}`).className = "modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600 font-bold cursor-pointer";
         }
-
-        init();
     </script>
 </body>
 </html>
