@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Склад Online v3.0</title>
+    <title>Склад Online v3.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
 	
 	<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -40,9 +40,52 @@
         .sync-clean { background-color: #2563eb; opacity: 0.8; }
         .sync-dirty { background-color: #dc2626; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
+
+        /* --- ИСПРАВЛЕННЫЕ СТИЛИ ДЛЯ ПЕЧАТИ --- */
+        @media print {
+            @page { margin: 0.5cm; size: auto; }
+            
+            /* Скрываем ВСЁ кроме области печати */
+            body > *:not(#printArea) { 
+                display: none !important; 
+            }
+            
+            /* Настройки body для печати */
+            body { 
+                background-color: white !important; 
+                height: auto !important;
+                overflow: visible !important;
+            }
+
+            /* Показываем и настраиваем область печати */
+            #printArea { 
+                display: block !important; /* Самое важное: перебиваем class="hidden" */
+                position: relative !important;
+                width: 100% !important;
+                height: auto !important;
+                left: 0 !important;
+                top: 0 !important;
+                background: white !important; 
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                visibility: visible !important;
+                font-size: 12pt;
+            }
+
+            #printArea * { 
+                visibility: visible !important; 
+            }
+
+            /* Скрываем элементы с классом no-print (на всякий случай) */
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800 relative">
+
+    <!-- Область печати (скрыта в обычном режиме) -->
+    <div id="printArea" class="hidden bg-white text-black"></div>
 
     <!-- Лоадер -->
     <div id="globalLoader">
@@ -70,7 +113,7 @@
     </div>
 
 
-<button onclick="syncWithCloud()" id="syncBtn" class="sync-fab sync-clean">
+<button onclick="syncWithCloud()" id="syncBtn" class="sync-fab sync-clean no-print">
         <i class="fas fa-cloud-upload-alt"></i> 
         <span id="syncText">Синхронизировано</span>
     </button>
@@ -82,13 +125,14 @@
 
     <div id="toast" class="toast flex items-center gap-3"><i class="fas fa-check-circle text-green-400"></i><span id="toastMsg">ОК</span></div>
 
-    <header class="bg-white border-b border-slate-200 shadow-sm z-20 flex-shrink-0">
+    <header class="bg-white border-b border-slate-200 shadow-sm z-20 flex-shrink-0 no-print">
         <div class="max-w-full mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-2 font-bold text-xl text-slate-800">
                     <i class="fas fa-cloud text-blue-600"></i> Склад Online <span class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 ml-2" id="connectionStatus">Offline</span>
                 </div>
                 <nav class="flex space-x-8 h-full hidden md:flex">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn h-full px-1 flex items-center font-medium transition"><i class="fas fa-chart-pie mr-2"></i>Дашборд</button>
                     <button onclick="switchTab('warehouse')" id="tab-warehouse" class="tab-btn active h-full px-1 flex items-center font-medium transition">Склад</button>
                     <button onclick="switchTab('movements')" id="tab-movements" class="tab-btn h-full px-1 flex items-center font-medium transition">Приход/Уход</button>
                     <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn h-full px-1 flex items-center font-medium transition">Проекты</button>
@@ -96,8 +140,9 @@
                 </nav>
                 <!-- Мобильное меню (упрощено) -->
                  <nav class="flex space-x-4 h-full md:hidden">
+                    <button onclick="switchTab('dashboard')" class="text-slate-600"><i class="fas fa-chart-pie"></i></button>
                     <button onclick="switchTab('warehouse')" class="text-slate-600"><i class="fas fa-boxes"></i></button>
-                    <button onclick="switchTab('projects')" class="text-slate-600"><i class="fas fa-folder"></i></button>
+                    <button onclick="switchTab('specs')" class="text-slate-600"><i class="fas fa-file-invoice"></i></button>
                 </nav>
 
                 <div class="flex items-center gap-2">
@@ -109,7 +154,62 @@
         </div>
     </header>
 
-    <main class="flex-1 overflow-hidden relative bg-slate-100">
+    <main class="flex-1 overflow-hidden relative bg-slate-100 no-print">
+        
+        <!-- 1. ДАШБОРД (НОВОЕ) -->
+        <div id="view-dashboard" class="view-section h-full hidden p-4 overflow-y-auto">
+            <h2 class="text-xl font-bold mb-6 text-slate-800">Сводка склада</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Карточка: Деньги -->
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-blue-500">
+                    <div class="text-slate-500 text-sm font-bold uppercase mb-1">Стоимость склада</div>
+                    <div class="text-3xl font-bold text-slate-800" id="dashTotalMoney">0 ₽</div>
+                    <div class="text-xs text-slate-400 mt-2">Сумма всех товаров по закупочной цене</div>
+                </div>
+                <!-- Карточка: Проекты -->
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-green-500">
+                    <div class="text-slate-500 text-sm font-bold uppercase mb-1">Активные проекты</div>
+                    <div class="text-3xl font-bold text-slate-800" id="dashActiveProj">0</div>
+                    <div class="text-xs text-slate-400 mt-2">На сумму: <span id="dashActiveBudget">0</span> ₽</div>
+                </div>
+                <!-- Карточка: Мало товара -->
+                <div class="bg-white p-6 rounded-xl shadow border-l-4 border-red-500">
+                    <div class="text-slate-500 text-sm font-bold uppercase mb-1">Заканчиваются</div>
+                    <div class="text-3xl font-bold text-slate-800" id="dashLowStockCount">0</div>
+                    <div class="text-xs text-slate-400 mt-2">Товары с остатком < 5</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Таблица заканчивающихся товаров -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-exclamation-triangle text-red-500"></i> Требуют внимания</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-xs text-slate-500 uppercase">
+                                <tr><th>Товар</th><th class="text-right">Остаток</th></tr>
+                            </thead>
+                            <tbody id="dashLowStockTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                 <!-- Последние операции -->
+                 <div class="bg-white rounded-lg shadow p-4">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-500"></i> Последние операции</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-xs text-slate-500 uppercase">
+                                <tr><th>Дата</th><th>Товар</th><th class="text-right">Кол-во</th></tr>
+                            </thead>
+                            <tbody id="dashLastMovTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="view-warehouse" class="view-section h-full flex flex-col md:flex-row p-2 md:p-4 gap-4">
             <div class="flex-1 bg-white rounded-lg shadow border border-slate-200 flex flex-col overflow-hidden">
                 <div class="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-lg shrink-0">
@@ -160,9 +260,15 @@
                             <h2 class="font-bold text-blue-800 text-sm" id="specTitle">...</h2>
                             <p class="text-[10px] text-slate-500 font-bold uppercase" id="specSubtitle">...</p>
                         </div>
-                        <button id="btnCommitSpec" onclick="commitSpec()" class="bg-green-600 text-white px-3 py-1.5 rounded shadow text-xs font-bold uppercase active:scale-95 transition">
-                            Списать
-                        </button>
+                        <div class="flex gap-2">
+                            <!-- КНОПКА ПЕЧАТИ (НОВОЕ) -->
+                            <button onclick="printSpec()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 py-1.5 rounded shadow text-xs font-bold uppercase transition" title="Распечатать">
+                                <i class="fas fa-print"></i> Печать
+                            </button>
+                            <button id="btnCommitSpec" onclick="commitSpec()" class="bg-green-600 text-white px-3 py-1.5 rounded shadow text-xs font-bold uppercase active:scale-95 transition">
+                                Списать
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex justify-end mb-3">
@@ -495,7 +601,7 @@
 
         function showLoader(v){const el = document.getElementById('globalLoader'); if(el) el.style.display=v?'flex':'none';}
         function showToast(m){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
-        function refreshAll(){ renderCategoryList(); renderWarehouse(); renderDatalists(); renderProjects(); if(selectedProjectId){renderSpecProjectList();renderSpecList(selectedProjectId);} if(selectedSpecId)loadSpec(selectedSpecId); renderHistoryTable(); }
+        function refreshAll(){ renderCategoryList(); renderWarehouse(); renderDatalists(); renderProjects(); if(selectedProjectId){renderSpecProjectList();renderSpecList(selectedProjectId);} if(selectedSpecId)loadSpec(selectedSpecId); renderHistoryTable(); renderDashboard(); }
         
         function seedData(){ 
             // Инициализация с гарантированно корректной структурой
@@ -512,7 +618,20 @@
         
         function resetData(){ if(confirm("ВНИМАНИЕ: Это очистит базу в облаке для ВСЕХ. Продолжить?")) { db={items:[],projects:[],specs:{},movements:[]}; syncWithCloud(); } }
         
-        function switchTab(t) { document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${t}`).classList.remove('hidden'); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); const btn = document.getElementById(`tab-${t}`); if(btn) btn.classList.add('active'); if(t==='projects') renderProjects(); if(t==='specs') renderSpecProjectList(); if(t==='warehouse') {renderCategoryList(); renderWarehouse();} if(t==='movements') renderHistoryTable(); }
+        function switchTab(t) { 
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden')); 
+            document.getElementById(`view-${t}`).classList.remove('hidden'); 
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); 
+            const btn = document.getElementById(`tab-${t}`); 
+            if(btn) btn.classList.add('active'); 
+            
+            if(t==='projects') renderProjects(); 
+            if(t==='specs') renderSpecProjectList(); 
+            if(t==='warehouse') {renderCategoryList(); renderWarehouse();} 
+            if(t==='movements') renderHistoryTable();
+            // НОВОЕ: Рендер дашборда
+            if(t==='dashboard') renderDashboard();
+        }
         
         function getReserve(itemId) { 
             let r = 0; 
@@ -718,6 +837,130 @@
             s.items.forEach((r, idx) => { const i = db.items.find(x => x.id === r.itemId); tot+=i.cost*r.qty; const del = s.status==='draft'?`<button onclick="remSpecItem(${idx})" class="text-red-400"><i class="fas fa-trash"></i></button>`:''; tb.innerHTML += `<tr class="border-b"><td class="px-4 py-2 text-sm">${i.name}</td><td class="text-center text-sm">${r.qty} ${i.unit}</td><td class="text-right text-sm">${i.cost*r.qty}</td><td class="text-right">${del}</td></tr>`; });
             document.getElementById('specTotalCost').textContent = tot + ' ₽';
         }
+
+        // --- НОВОЕ: Функция печати ---
+        function printSpec() {
+            if(!selectedProjectId || !selectedSpecId) return;
+            
+            const project = db.projects.find(p => p.id === selectedProjectId);
+            const spec = db.specs[selectedProjectId].find(s => s.id === selectedSpecId);
+            
+            if(!project || !spec) return;
+
+            let rows = '';
+            let total = 0;
+
+            spec.items.forEach((item, index) => {
+                const dbItem = db.items.find(i => i.id === item.itemId);
+                if(dbItem) {
+                    const sum = dbItem.cost * item.qty;
+                    total += sum;
+                    rows += `
+                        <tr class="border-b">
+                            <td class="p-2 text-center">${index + 1}</td>
+                            <td class="p-2">${dbItem.name}</td>
+                            <td class="p-2 text-center">${dbItem.unit}</td>
+                            <td class="p-2 text-center">${item.qty}</td>
+                            <td class="p-2 text-right">${dbItem.cost}</td>
+                            <td class="p-2 text-right font-bold">${sum}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            const html = `
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
+                        <div>
+                            <h1 class="text-2xl font-bold uppercase">Спецификация на материалы</h1>
+                            <div class="mt-2 text-sm">
+                                <div><strong>Проект:</strong> ${project.name}</div>
+                                <div><strong>Заказчик:</strong> ${project.client}</div>
+                                <div><strong>Спецификация:</strong> ${spec.name}</div>
+                            </div>
+                        </div>
+                        <div class="text-right text-sm">
+                            <div>Дата: ${new Date().toLocaleDateString()}</div>
+                            <div class="font-bold text-lg mt-2">Статус: ${spec.status === 'committed' ? 'Списано' : 'Черновик'}</div>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-sm mb-8">
+                        <thead>
+                            <tr class="border-b-2 border-black">
+                                <th class="p-2 text-center w-10">№</th>
+                                <th class="p-2 text-left">Наименование</th>
+                                <th class="p-2 text-center w-16">Ед.</th>
+                                <th class="p-2 text-center w-20">Кол-во</th>
+                                <th class="p-2 text-right w-24">Цена</th>
+                                <th class="p-2 text-right w-28">Сумма</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t-2 border-black">
+                                <td colspan="5" class="p-2 text-right font-bold text-lg">ИТОГО:</td>
+                                <td class="p-2 text-right font-bold text-lg">${total.toLocaleString()} ₽</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="flex justify-between mt-12 text-sm">
+                        <div>
+                            <div class="border-t border-black w-48 pt-1">Сдал (Кладовщик)</div>
+                        </div>
+                        <div>
+                            <div class="border-t border-black w-48 pt-1">Принял (Монтажник)</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = html;
+            window.print();
+        }
+
+        // --- НОВОЕ: Рендер дашборда ---
+        function renderDashboard() {
+            if(!db.items) return;
+
+            // 1. Деньги
+            let totalMoney = db.items.reduce((acc, i) => acc + (i.cost * i.qty), 0);
+            document.getElementById('dashTotalMoney').innerText = totalMoney.toLocaleString() + ' ₽';
+
+            // 2. Активные проекты
+            let activeProj = (db.projects || []).filter(p => p.status === 'active');
+            document.getElementById('dashActiveProj').innerText = activeProj.length;
+            let budget = activeProj.reduce((acc, p) => acc + (p.cost || 0), 0);
+            document.getElementById('dashActiveBudget').innerText = budget.toLocaleString();
+
+            // 3. Мало товара
+            let lowStock = db.items.filter(i => i.qty < 5);
+            document.getElementById('dashLowStockCount').innerText = lowStock.length;
+            
+            // Таблица Low Stock
+            const lsTable = document.getElementById('dashLowStockTable');
+            lsTable.innerHTML = lowStock.slice(0, 5).map(i => `
+                <tr class="border-b">
+                    <td class="py-2 font-medium text-slate-700">${i.name}</td>
+                    <td class="py-2 text-right font-bold text-red-600">${i.qty} ${i.unit}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="2" class="py-4 text-center text-slate-400 text-sm">Все в порядке</td></tr>';
+
+            // Таблица последних движений
+            const movTable = document.getElementById('dashLastMovTable');
+            movTable.innerHTML = (db.movements || []).slice(0, 5).map(m => `
+                 <tr class="border-b">
+                    <td class="py-2 text-slate-500 text-xs">${m.date.split(',')[0]}</td>
+                    <td class="py-2 font-medium text-slate-700 text-sm truncate max-w-[150px]">${m.itemName}</td>
+                    <td class="py-2 text-right font-bold ${m.type==='in'?'text-green-600':'text-red-600'} text-sm">${m.type==='in'?'+':'-'}${m.qty}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" class="py-4 text-center text-slate-400 text-sm">Нет операций</td></tr>';
+        }
+
         function filterSpecSearch() {
             const v = document.getElementById('specSearchInput').value.toLowerCase(), r = document.getElementById('specSearchResults');
             if(v.length<1) { r.classList.add('hidden'); return; }
