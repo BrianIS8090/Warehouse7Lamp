@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Склад 7LAMP v4.3</title>
+    <title>Склад Online v4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class', // Включаем режим "по классу" для ручного переключения
+            darkMode: 'class',
         }
     </script>
 	
@@ -25,20 +25,17 @@
         
         .tab-btn.active { background-color: #ffffff; color: #2563eb; border-bottom: 2px solid #2563eb; }
         .dark .tab-btn.active { background-color: #1e293b; color: #60a5fa; border-bottom: 2px solid #60a5fa; }
-        
         .tab-btn { color: #64748b; border-bottom: 2px solid transparent; }
         .dark .tab-btn { color: #94a3b8; }
         
         .modal-tab.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: bold; }
         .dark .modal-tab.active { border-bottom: 2px solid #60a5fa; color: #60a5fa; }
-        
         .modal-tab { color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; }
         .dark .modal-tab { color: #94a3b8; }
         
         .toast { position: fixed; bottom: 20px; right: 20px; background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transform: translateY(100px); opacity: 0; transition: all 0.3s ease-out; z-index: 100; }
         .toast.show { transform: translateY(0); opacity: 1; }
         
-        /* Лоадер на весь экран */
         #globalLoader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 9999; display: none; justify-content: center; align-items: center; flex-col: column; backdrop-filter: blur(2px); }
         .dark #globalLoader { background: rgba(15, 23, 42, 0.9); }
         .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -56,7 +53,6 @@
         .sync-dirty { background-color: #dc2626; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
 
-        /* Стили для печати */
         @media print {
             @page { margin: 0.5cm; size: auto; }
             body > *:not(#printArea) { display: none !important; }
@@ -76,24 +72,20 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-slate-800 bg-slate-100 dark:bg-slate-900 dark:text-slate-100 relative transition-colors duration-300">
 
-    <!-- Область печати -->
     <div id="printArea" class="hidden bg-white text-black"></div>
 
-    <!-- Лоадер -->
     <div id="globalLoader">
         <div class="spinner mb-4"></div>
         <div class="text-slate-500 dark:text-slate-400 font-medium">Загрузка...</div>
     </div>
 
-<div id="loginScreen" class="fixed inset-0 bg-slate-900 z-[2000] flex flex-col items-center justify-center p-4">
+    <div id="loginScreen" class="fixed inset-0 bg-slate-900 z-[2000] flex flex-col items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center transition-colors">
             <div class="mb-6"><i class="fas fa-shield-alt text-5xl text-blue-600"></i></div>
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-2">Вход на Склад</h2>
             <p class="text-slate-500 dark:text-slate-400 mb-6 text-sm">Введите данные сотрудника</p>
-            
             <input type="email" id="loginEmail" class="w-full border dark:border-slate-600 p-3 rounded-lg mb-3 bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="Email (admin@sklad.ru)" value="admin@sklad.ru">
             <input type="password" id="loginPass" class="w-full border dark:border-slate-600 p-3 rounded-lg mb-6 bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="Пароль (123456)" value="123456">
-            
             <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg mb-4">Войти (Firebase)</button>
             <button onclick="demoLogin()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition mb-4 text-sm">Демо вход (без пароля)</button>
             <div id="loginError" class="p-3 bg-red-50 text-red-600 rounded text-sm font-bold hidden border border-red-100 text-left"></div>
@@ -101,7 +93,7 @@
         </div>
     </div>
 
-<button onclick="syncWithCloud()" id="syncBtn" class="sync-fab sync-clean no-print">
+    <button onclick="syncWithCloud()" id="syncBtn" class="sync-fab sync-clean no-print">
         <i class="fas fa-cloud-upload-alt"></i> <span id="syncText">Синхронизировано</span>
     </button>
 
@@ -111,7 +103,7 @@
         <div class="max-w-full mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-2 font-bold text-xl text-slate-800 dark:text-white">
-                    <i class="fas fa-cloud text-blue-600"></i> Склад 7LAMP <span class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500 dark:text-slate-300 ml-2" id="connectionStatus">Offline</span>
+                    <i class="fas fa-cloud text-blue-600"></i> Склад Online <span class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500 dark:text-slate-300 ml-2" id="connectionStatus">Offline</span>
                 </div>
                 <nav class="flex space-x-8 h-full hidden md:flex">
                     <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn h-full px-1 flex items-center font-medium transition"><i class="fas fa-chart-pie mr-2"></i>Дашборд</button>
@@ -126,11 +118,12 @@
                     <button onclick="switchTab('specs')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-file-invoice"></i></button>
                 </nav>
                 <div class="flex items-center gap-2">
-                    <!-- Кнопка темы -->
+                    <button onclick="openSettings()" class="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 mr-1" title="Настройки">
+                        <i class="fas fa-cog"></i>
+                    </button>
                     <button onclick="toggleTheme()" class="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 mr-2">
                         <i id="themeIcon" class="fas fa-moon"></i>
                     </button>
-                    
                     <button onclick="init()" class="text-xs text-blue-500 hover:underline mr-2 hidden md:inline"><i class="fas fa-sync"></i> Обновить</button>
 					<button onclick="logout()" class="text-slate-400 hover:text-red-600 text-xs flex items-center gap-1 ml-4"><i class="fas fa-sign-out-alt"></i> Выйти</button>
                 </div>
@@ -144,7 +137,6 @@
         <div id="view-dashboard" class="view-section h-full hidden p-4 overflow-y-auto">
             <h2 class="text-xl font-bold mb-6 text-slate-800 dark:text-white">Сводка склада</h2>
             
-            <!-- КАРТОЧКИ -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border-l-4 border-blue-500 transition-colors">
                     <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Стоимость склада</div>
@@ -165,7 +157,6 @@
                 </div>
             </div>
 
-            <!-- ТАБЛИЦЫ -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors">
                     <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2"><i class="fas fa-clock text-orange-500"></i> Срочные проекты</h3>
@@ -317,46 +308,42 @@
         </div>
     </main>
 
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 p-6 rounded-lg w-full max-w-sm shadow-2xl transition-colors">
+            <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Настройки</h3>
+            <div class="space-y-3">
+                <button onclick="exportData()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-download"></i> Скачать базу (Backup)
+                </button>
+                
+                <div class="relative">
+                    <input type="file" id="importFile" class="hidden" onchange="importData(this)">
+                    <button onclick="document.getElementById('importFile').click()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-upload"></i> Загрузить базу
+                    </button>
+                </div>
+
+                <div class="border-t dark:border-slate-600 my-4 pt-4">
+                     <button onclick="exportToExcel()" class="w-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 py-3 rounded-lg font-bold hover:bg-green-200 dark:hover:bg-green-800 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-file-excel"></i> Экспорт в Excel (CSV)
+                    </button>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeModal('settingsModal')" class="text-slate-500 dark:text-slate-400 font-medium">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODALS -->
     <div id="projectDetailsModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="pdTitle">История</h3><button onclick="closeModal('projectDetailsModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1 text-slate-600 dark:text-slate-300" id="pdContent"></div></div></div>
     <div id="itemCardModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6 text-slate-700 dark:text-slate-300"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500 dark:bg-slate-600 dark:text-slate-400 dark:border-slate-600" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="м">м</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><input id="cardCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div class="md:col-span-2"><img id="cardImgPreview" src="" class="w-full h-64 object-contain mb-3 rounded-lg border border-slate-200 bg-slate-50 hidden"><label class="lbl">Фото URL</label><input id="cardImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..." oninput="updateCardPreview()"></div><div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div class="mt-8 flex justify-end"><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Операции</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardMovHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Проекты</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div></div></div></div></div>
     <div id="createItemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div class="col-span-2"><label class="lbl">Наименование</label><input id="newItemName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newItemFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
     <div id="createProjectModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div><label class="lbl">Год</label><input id="newPrYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
-    <div id="projectCardModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchProjectTab('info')" id="ptab-info" class="modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600">Основная информация</div><div onclick="switchProjectTab('specs')" id="ptab-specs" class="modal-tab px-2 py-1 text-slate-500">Спецификации</div></div><button onclick="closeModal('projectCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><input type="hidden" id="pcId"><div id="pview-info" class="space-y-4 text-slate-700 dark:text-slate-300"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Год</label><input id="pcYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Номер заявки</label><input id="pcNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div><label class="lbl">Наименование</label><input id="pcName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Описание</label><textarea id="pcDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div><label class="lbl">Заказчик</label><input id="pcClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Дата начала</label><input id="pcStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Срок сдачи</label><input id="pcEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div></div><div><label class="lbl">Бюджет (руб)</label><input id="pcCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div class="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded border dark:border-slate-600 flex justify-between items-center"><span class="text-sm font-bold text-slate-500 dark:text-slate-400">Текущий статус:</span><span id="pcStatus" class="font-bold px-2 py-1 rounded text-sm"></span></div><div class="mt-6 flex justify-end pt-4 border-t dark:border-slate-700"><button onclick="saveProjectFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow w-full sm:w-auto">Сохранить изменения</button></div></div><div id="pview-specs" class="hidden"><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-3">Состав проекта</h4><div class="overflow-hidden border dark:border-slate-700 rounded-lg"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="px-4 py-2">Название спецификации</th><th class="px-4 py-2 text-center">Статус</th><th class="px-4 py-2 text-center">Позиций</th><th class="px-4 py-2 text-right">Сумма</th></tr></thead><tbody id="pcSpecsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div class="mt-4 text-right font-bold text-lg text-slate-800 dark:text-white">Общая сумма: <span id="pcTotalSpecsCost">0 ₽</span></div></div></div></div></div>
-
-    <!-- НОВОЕ МОДАЛЬНОЕ ОКНО: Нестандартное изделие -->
-    <div id="addCustomItemModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-slate-800 p-6 rounded-lg w-full max-w-md shadow-2xl border-t-4 border-yellow-500 transition-colors">
-            <h3 class="font-bold text-lg mb-4 text-yellow-600 dark:text-yellow-500"><i class="fas fa-star mr-2"></i>Нестандартное изделие</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Эти позиции не списываются со склада, но учитываются в стоимости спецификации.</p>
-            
-            <div class="space-y-3 mb-6 text-slate-700 dark:text-slate-300">
-                <div>
-                    <label class="lbl">Наименование (услуга/товар)</label>
-                    <input id="customName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="Например: Монтаж щита">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="lbl">Ед. изм.</label>
-                        <input id="customUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="шт.">
-                    </div>
-                    <div>
-                        <label class="lbl">Количество</label>
-                        <input id="customQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="1">
-                    </div>
-                </div>
-                <div>
-                    <label class="lbl">Стоимость за единицу (₽)</label>
-                    <input id="customCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0">
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-2">
-                <button onclick="closeModal('addCustomItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2 font-medium">Отмена</button>
-                <button onclick="addCustomItem()" class="bg-yellow-500 text-white px-6 py-2 rounded font-bold hover:bg-yellow-600 shadow">Добавить</button>
-            </div>
-        </div>
-    </div>
+    <div id="projectCardModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50 backdrop-blur-sm"><div class="bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchProjectTab('info')" id="ptab-info" class="modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600">Основная информация</div><div onclick="switchProjectTab('specs')" id="ptab-specs" class="modal-tab px-2 py-1 text-slate-500">Спецификации</div></div><button onclick="closeModal('projectCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><input type="hidden" id="pcId"><div id="pview-info" class="space-y-4 text-slate-700 dark:text-slate-300"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Год</label><input id="pcYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Номер заявки</label><input id="pcNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div><label class="lbl">Наименование</label><input id="pcName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Описание</label><textarea id="pcDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div><label class="lbl">Заказчик</label><input id="pcClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Дата начала</label><input id="pcStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Срок сдачи</label><input id="pcEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div></div><div><label class="lbl">Бюджет (руб)</label><input id="pcCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div class="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded border dark:border-slate-600 flex justify-between items-center"><span class="text-sm font-bold text-slate-500 dark:text-slate-400">Текущий статус:</span><span id="pcStatus" class="font-bold px-2 py-1 rounded text-sm"></span></div><div class="mt-6 flex justify-end pt-4 border-t dark:border-slate-700"><button onclick="saveProjectFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow w-full sm:w-auto">Сохранить изменения</button>
+                    <button onclick="duplicateProject(parseInt(document.getElementById('pcId').value))" class="ml-3 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 px-4 py-3 rounded font-bold hover:bg-slate-200 dark:hover:bg-slate-600"><i class="fas fa-copy mr-2"></i> Копия</button>
+                </div></div><div id="pview-specs" class="hidden"><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-3">Состав проекта</h4><div class="overflow-hidden border dark:border-slate-700 rounded-lg"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="px-4 py-2">Название спецификации</th><th class="px-4 py-2 text-center">Статус</th><th class="px-4 py-2 text-center">Позиций</th><th class="px-4 py-2 text-right">Сумма</th></tr></thead><tbody id="pcSpecsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div class="mt-4 text-right font-bold text-lg text-slate-800 dark:text-white">Общая сумма: <span id="pcTotalSpecsCost">0 ₽</span></div></div></div></div></div>
 
     <!-- НОВОЕ МОДАЛЬНОЕ ОКНО: Быстрая операция -->
     <div id="quickMoveModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
@@ -442,6 +429,29 @@
                 });
             }
         })();
+        
+        // --- HELPER: Convert Google Drive Links ---
+        function getDirectImageUrl(url) {
+            if (!url) return "";
+            
+            // Regex to identify Google Drive links
+            // Pattern 1: https://drive.google.com/file/d/{FILE_ID}/view?usp=sharing
+            // Pattern 2: https://drive.google.com/open?id={FILE_ID}
+            
+            const patterns = [
+                /\/file\/d\/([a-zA-Z0-9_-]+)/,
+                /id=([a-zA-Z0-9_-]+)/
+            ];
+
+            for (let pattern of patterns) {
+                const match = url.match(pattern);
+                if (match && match[1]) {
+                    // Construct direct view link (standard hack)
+                    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                }
+            }
+            return url;
+        }
 
         // --- 3. AUTHENTICATION ---
         if (auth) { 
@@ -742,6 +752,7 @@
                 const freeColor = free < 0 ? 'text-red-600 dark:text-red-400' : (free < 5 ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'); 
                 const fileIcon = i.file ? `<a href="${i.file}" target="_blank" onclick="event.stopPropagation()" class="ml-2 text-slate-400 hover:text-blue-600" title="Скачать файл"><i class="fas fa-file-alt"></i></a>` : ''; 
                 
+                // NEW: Quick Action Buttons
                 const quickActions = `
                     <div class="flex gap-1 justify-center">
                         <button onclick="event.stopPropagation(); openQuickMove(${i.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
@@ -759,7 +770,7 @@
                     <td class="px-4 py-3 font-medium text-blue-700 dark:text-blue-400 group-hover:underline">${i.name}${fileIcon}</td>
                     <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${i.manuf}</td>
                     <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${i.qty}</td>
-                    <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">Рез.</td>
+                    <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${res > 0 ? res : '-'}</td>
                     <td class="px-4 py-3 text-center font-bold ${freeColor}">${free}</td>
                     <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400">${i.cost.toLocaleString()} ₽</td>
                 </tr>`; 
@@ -919,6 +930,7 @@
                 let vb = b[key];
                 if (typeof va === 'string') va = va.toLowerCase();
                 if (typeof vb === 'string') vb = vb.toLowerCase();
+                
                 if (va < vb) return dir === 'asc' ? -1 : 1;
                 if (va > vb) return dir === 'asc' ? 1 : -1;
                 return 0;
@@ -1335,6 +1347,99 @@
             s.date = new Date().toLocaleDateString(); 
             save(); 
             showToast('Списано'); 
+        }
+
+        // --- SETTINGS FUNCTIONS (NEW) ---
+        function openSettings() {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "warehouse_backup_" + new Date().toISOString().split('T')[0] + ".json");
+            document.body.appendChild(downloadAnchorNode); 
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedDb = JSON.parse(e.target.result);
+                    if (confirm("Внимание! Текущая база будет полностью заменена данными из файла. Продолжить?")) {
+                        db = importedDb;
+                        if(!db.items) db.items = []; 
+                        if(!db.projects) db.projects = []; 
+                        if(!db.movements) db.movements = []; 
+                        if(!db.specs || Array.isArray(db.specs)) db.specs = {}; 
+                        
+                        save();
+                        closeModal('settingsModal');
+                        showToast("База успешно загружена");
+                    }
+                } catch (err) {
+                    alert("Ошибка чтения файла: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; 
+        }
+        
+        function exportToExcel() {
+             let csvContent = "data:text/csv;charset=utf-8,";
+             csvContent += "ID,Название,Производитель,Категория,Остаток,Ед.изм,Цена\r\n";
+             
+             db.items.forEach(function(rowArray) {
+                 let row = `${rowArray.id},"${rowArray.name}","${rowArray.manuf}","${rowArray.cat}",${rowArray.qty},"${rowArray.unit}",${rowArray.cost}`;
+                 csvContent += row + "\r\n";
+             });
+
+             const encodedUri = encodeURI(csvContent);
+             const link = document.createElement("a");
+             link.setAttribute("href", encodedUri);
+             link.setAttribute("download", "warehouse_items.csv");
+             document.body.appendChild(link);
+             link.click();
+             link.remove();
+        }
+        
+        function duplicateProject(pid) {
+            const p = db.projects.find(x => x.id === pid);
+            if(!p) return;
+            
+            if(!confirm(`Создать копию проекта "${p.name}"?`)) return;
+            
+            const newId = Date.now();
+            const newProject = {
+                ...p,
+                id: newId,
+                name: p.name + " (Копия)",
+                status: 'active'
+            };
+            
+            const oldSpecs = (db.specs || {})[pid] || [];
+            const newSpecs = oldSpecs.map(s => ({
+                ...s,
+                id: 's_' + Math.random().toString(36).substr(2, 9),
+                status: 'draft', 
+                date: new Date().toLocaleDateString(),
+                items: s.items.map(i => ({...i})) 
+            }));
+            
+            db.projects.push(newProject);
+            if(!db.specs) db.specs = {};
+            db.specs[newId] = newSpecs;
+            
+            save();
+            closeModal('projectCardModal');
+            renderProjects();
+            showToast("Проект скопирован");
         }
 
         // --- MODALS & DIALOGS ---
