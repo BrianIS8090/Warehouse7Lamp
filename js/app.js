@@ -27,15 +27,34 @@ try {
 let db = { items: [], projects: [], specs: {}, movements: [] };
 let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null, hasUnsavedChanges = false;
 
-// Optimization: Pagination Variables
+// Pagination Variables
 let currentPage = 1;
-const itemsPerPage = 20;
+let itemsPerPage = 20; // Может быть 20, 100 или null (все)
 let totalPages = 1;
 
 let sortState = {
     warehouse: { key: 'id', dir: 'desc' },
     projects: { key: 'id', dir: 'desc' }
 };
+
+// --- PERFORMANCE OPTIMIZATION ---
+// Cache for reserves to avoid recalculating on every render
+let reservesCache = {};
+let reservesCacheTimestamp = 0;
+const RESERVES_CACHE_TTL = 1000; // 1 second cache
+
+// Debounce function for search input
+let searchDebounceTimer = null;
+function debounce(func, wait) {
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(searchDebounceTimer);
+            func(...args);
+        };
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(later, wait);
+    };
+}
 
 // --- NEW: THEME LOGIC ---
 function toggleTheme() {
@@ -191,6 +210,15 @@ async function init(force = false) {
             db.movements.forEach((m, idx) => { if(!m.id) m.id = 'mig_' + Date.now() + '_' + idx; });
         }
 
+        // Восстанавливаем выбранный режим пагинации из localStorage
+        const savedPerPage = localStorage.getItem('warehouseItemsPerPage');
+        if (savedPerPage === 'all') {
+            itemsPerPage = null;
+        } else if (savedPerPage) {
+            itemsPerPage = parseInt(savedPerPage) || 20;
+        }
+        updatePaginationButtons();
+        
         refreshAll(); 
         updateSyncUI(); 
     } catch(e) { 
@@ -203,7 +231,17 @@ async function init(force = false) {
             if(!db.movements) db.movements = []; 
             if(!db.specs || Array.isArray(db.specs)) db.specs = {}; 
             showToast("Оффлайн режим (ошибка сети)"); 
-        } 
+        }
+        
+        // Восстанавливаем выбранный режим пагинации из localStorage
+        const savedPerPage = localStorage.getItem('warehouseItemsPerPage');
+        if (savedPerPage === 'all') {
+            itemsPerPage = null;
+        } else if (savedPerPage) {
+            itemsPerPage = parseInt(savedPerPage) || 20;
+        }
+        updatePaginationButtons();
+        
         refreshAll(); 
     } finally { 
         showLoader(false); 
@@ -230,11 +268,19 @@ async function syncWithCloud() {
     } 
 }
 
-function save() { 
+function save(updateUI = true) { 
     localStorage.setItem('wms_v4_data', JSON.stringify(db)); 
     hasUnsavedChanges = true; 
+    // Invalidate reserves cache when data changes
+    reservesCacheTimestamp = 0;
     updateSyncUI(); 
-    refreshAll(); 
+    // Only refresh UI if explicitly requested (for performance)
+    if (updateUI) {
+        // Use requestAnimationFrame to batch DOM updates
+        requestAnimationFrame(() => {
+            refreshAll();
+        });
+    }
 }
 
 function updateSyncUI() { 
@@ -298,22 +344,36 @@ function switchTab(t) {
     
     if(t==='projects') renderProjects(); 
     if(t==='specs') renderSpecProjectList(); 
-    if(t==='warehouse') {renderCategoryList(); renderWarehouse();} 
+    if(t==='warehouse') {
+        renderCategoryList(); 
+        updatePaginationButtons(); // Обновляем кнопки при переключении на вкладку
+        renderWarehouse();
+    } 
     if(t==='movements') renderHistoryTable(); 
     if(t==='dashboard') renderDashboard(); 
 }
 
 // --- WAREHOUSE LOGIC ---
-function getReserve(itemId) { 
-    let r = 0; 
-    const specs = db.specs || {}; 
-    Object.values(specs).flat().forEach(s => { 
-        if(s.status === 'draft') { 
-            const l = s.items.find(x => x.itemId === itemId); 
-            if(l) r += l.qty; 
-        } 
-    }); 
-    return r; 
+// Optimized getReserve with caching
+function getReserve(itemId) {
+    const now = Date.now();
+    // Invalidate cache if too old or if specs changed
+    if (now - reservesCacheTimestamp > RESERVES_CACHE_TTL || !reservesCache[itemId]) {
+        // Recalculate all reserves at once
+        reservesCache = {};
+        const specs = db.specs || {}; 
+        Object.values(specs).flat().forEach(s => { 
+            if(s.status === 'draft') { 
+                s.items.forEach(item => {
+                    if (!item.isCustom && item.itemId) {
+                        reservesCache[item.itemId] = (reservesCache[item.itemId] || 0) + item.qty;
+                    }
+                });
+            } 
+        });
+        reservesCacheTimestamp = now;
+    }
+    return reservesCache[itemId] || 0;
 }
 
 function renderCategoryList() { 
@@ -336,7 +396,7 @@ function renderCategoryList() {
 
 function filterCat(cat) { 
     currentFilterCat = cat; 
-    currentPage = 1; // Reset to first page on filter change
+    currentPage = 1; // Сбрасываем на первую страницу при смене категории
     renderCategoryList(); 
     renderWarehouse(); 
 }
@@ -351,7 +411,50 @@ function setWarehouseSort(key) {
     renderWarehouse();
 }
 
+// Debounced version of renderWarehouse for search input
+const debouncedRenderWarehouse = debounce(() => {
+    currentPage = 1; // Сбрасываем на первую страницу при поиске
+    renderWarehouse();
+}, 300);
+
 // Pagination Functions
+function setItemsPerPage(count) {
+    itemsPerPage = count;
+    currentPage = 1; // Сбрасываем на первую страницу при смене режима
+    // Сохраняем выбор в localStorage
+    if (count === null) {
+        localStorage.setItem('warehouseItemsPerPage', 'all');
+    } else {
+        localStorage.setItem('warehouseItemsPerPage', count.toString());
+    }
+    updatePaginationButtons();
+    renderWarehouse();
+}
+
+function updatePaginationButtons() {
+    // Обновляем стили кнопок выбора количества
+    const btn20 = document.getElementById('btnPerPage20');
+    const btn100 = document.getElementById('btnPerPage100');
+    const btnAll = document.getElementById('btnPerPageAll');
+    
+    // Если элементы еще не загружены, выходим
+    if (!btn20 || !btn100 || !btnAll) return;
+    
+    // Сбрасываем все кнопки к неактивному состоянию
+    [btn20, btn100, btnAll].forEach(btn => {
+        btn.className = 'px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium';
+    });
+    
+    // Активируем выбранную кнопку
+    if (itemsPerPage === 20) {
+        btn20.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium';
+    } else if (itemsPerPage === 100) {
+        btn100.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium';
+    } else if (itemsPerPage === null) {
+        btnAll.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium';
+    }
+}
+
 function prevPage() {
     if (currentPage > 1) {
         currentPage--;
@@ -366,73 +469,145 @@ function nextPage() {
     }
 }
 
+// Optimized renderWarehouse with DocumentFragment and performance improvements
 function renderWarehouse() { 
     const tbody = document.getElementById('warehouseTableBody'); 
-    const q = document.getElementById('warehouseSearch').value.toLowerCase(); 
+    const q = document.getElementById('warehouseSearch').value.toLowerCase().trim(); 
     const items = db.items || []; 
     
-    let filtered = items.filter(i => { 
-        const matchCat = currentFilterCat === 'all' || i.cat === currentFilterCat; 
-        const matchSearch = i.name.toLowerCase().includes(q) || i.manuf.toLowerCase().includes(q); 
-        return matchCat && matchSearch; 
-    }); 
+    // Pre-filter items (more efficient than chaining)
+    let filtered = [];
+    const isAllCats = currentFilterCat === 'all';
+    const hasSearch = q.length > 0;
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!isAllCats && item.cat !== currentFilterCat) continue;
+        if (hasSearch && !item.name.toLowerCase().includes(q) && !item.manuf.toLowerCase().includes(q)) continue;
+        filtered.push(item);
+    }
 
+    // Optimized sorting
     const key = sortState.warehouse.key;
     const dir = sortState.warehouse.dir;
+    const isAsc = dir === 'asc';
     
-    filtered.sort((a, b) => {
-        let va = a[key];
-        let vb = b[key];
-        if (typeof va === 'string') va = va.toLowerCase();
-        if (typeof vb === 'string') vb = vb.toLowerCase();
-        if (va < vb) return dir === 'asc' ? -1 : 1;
-        if (va > vb) return dir === 'asc' ? 1 : -1;
-        return 0;
-    });
+    if (key === 'name' || key === 'manuf' || key === 'cat') {
+        filtered.sort((a, b) => {
+            const va = (a[key] || '').toLowerCase();
+            const vb = (b[key] || '').toLowerCase();
+            return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        });
+    } else {
+        filtered.sort((a, b) => {
+            const va = a[key] || 0;
+            const vb = b[key] || 0;
+            return isAsc ? va - vb : vb - va;
+        });
+    }
 
     // Pagination Logic
-    totalPages = Math.ceil(filtered.length / itemsPerPage);
-    if (totalPages === 0) totalPages = 1;
-    if (currentPage > totalPages) currentPage = totalPages;
+    const paginationNavEl = document.getElementById('warehousePaginationNav');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const btnPrev = document.getElementById('btnPrevPage');
+    const btnNext = document.getElementById('btnNextPage');
     
-    document.getElementById('pageIndicator').textContent = `Стр. ${currentPage} из ${totalPages} (${filtered.length} поз.)`;
-    document.getElementById('btnPrevPage').disabled = currentPage === 1;
-    document.getElementById('btnNextPage').disabled = currentPage === totalPages;
-
-    const paginatedItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-    
-    const htmlRows = paginatedItems.map(i => { 
-        const img = i.img ? `<img src="${i.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото" onerror="this.src='https://placehold.co/40'">` : '<span class="text-slate-300">-</span>'; 
-        const res = getReserve(i.id); 
-        const free = i.qty - res; 
-        const freeColor = free < 0 ? 'text-red-600 dark:text-red-400' : (free < 5 ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400'); 
-        const fileIcon = i.file ? `<a href="${i.file}" target="_blank" onclick="event.stopPropagation()" class="ml-2 text-slate-400 hover:text-blue-600" title="Скачать файл"><i class="fas fa-file-alt"></i></a>` : ''; 
+    // Вычисляем пагинацию
+    if (itemsPerPage === null) {
+        // Режим "Все" - показываем все товары, скрываем только навигацию по страницам
+        totalPages = 1;
+        currentPage = 1;
+        if (paginationNavEl) paginationNavEl.classList.add('hidden');
+    } else {
+        // Режим с ограничением - показываем навигацию по страницам
+        totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (paginationNavEl) paginationNavEl.classList.remove('hidden');
         
-        const quickActions = `
-            <div class="flex gap-1 justify-center">
-                <button onclick="event.stopPropagation(); openQuickMove(${i.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
-                    <i class="fas fa-arrow-down text-xs"></i>
-                </button>
-                <button onclick="event.stopPropagation(); openQuickMove(${i.id}, 'out')" class="w-7 h-7 rounded bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 flex items-center justify-center" title="Списание">
-                    <i class="fas fa-arrow-up text-xs"></i>
-                </button>
-            </div>
-        `;
+        // Обновляем индикатор страницы
+        if (pageIndicator) {
+            pageIndicator.textContent = `Стр. ${currentPage} из ${totalPages}`;
+        }
+        
+        // Обновляем состояние кнопок навигации
+        if (btnPrev) {
+            btnPrev.disabled = currentPage === 1;
+        }
+        if (btnNext) {
+            btnNext.disabled = currentPage >= totalPages;
+        }
+    }
 
-        return `<tr onclick="openItemCard(${i.id})" class="border-b dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition h-14 group">
-            <td class="px-2 py-3 text-center">${quickActions}</td>
-            <td class="px-4 py-3 text-center">${img}</td>
-            <td class="px-4 py-3 font-medium text-blue-700 dark:text-blue-400 group-hover:underline">${i.name}${fileIcon}</td>
-            <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${i.manuf}</td>
-            <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${i.qty}</td>
-            <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${res > 0 ? res : '-'}</td>
-            <td class="px-4 py-3 text-center font-bold ${freeColor}">${free}</td>
-            <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400">${i.cost.toLocaleString()} ₽</td>
-        </tr>`; 
-    }).join(''); 
-    tbody.innerHTML = htmlRows || '<tr><td colspan="8" class="p-8 text-center text-slate-400">Ничего не найдено</td></tr>'; 
+    // Use DocumentFragment for better performance
+    const fragment = document.createDocumentFragment();
+    
+    if (filtered.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td colspan="9" class="p-8 text-center text-slate-400">Ничего не найдено</td>';
+        fragment.appendChild(emptyRow);
+    } else {
+        // Pre-calculate reserves for all items at once (cache optimization)
+        getReserve(0); // This will populate the cache
+        
+        // Определяем диапазон товаров для отображения
+        let startIndex = 0;
+        let endIndex = filtered.length;
+        
+        if (itemsPerPage !== null) {
+            startIndex = (currentPage - 1) * itemsPerPage;
+            endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
+        }
+        
+        // Create rows using DocumentFragment
+        for (let i = startIndex; i < endIndex; i++) {
+            const item = filtered[i];
+            const res = getReserve(item.id);
+            const free = item.qty - res;
+            const freeColor = free < 0 ? 'text-red-600 dark:text-red-400' : (free < 5 ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400');
+            
+            const row = document.createElement('tr');
+            row.className = 'border-b dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition h-14 group';
+            row.onclick = () => openItemCard(item.id);
+            
+            const img = item.img ? `<img src="${item.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото" onerror="this.src='https://placehold.co/40'">` : '<span class="text-slate-300">-</span>';
+            const fileIcon = item.file ? `<a href="${item.file}" target="_blank" onclick="event.stopPropagation()" class="ml-2 text-slate-400 hover:text-blue-600" title="Скачать файл"><i class="fas fa-file-alt"></i></a>` : '';
+            
+            row.innerHTML = `
+                <td class="px-2 py-3 text-center">
+                    <div class="flex gap-1 justify-center">
+                        <button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
+                            <i class="fas fa-arrow-down text-xs"></i>
+                        </button>
+                        <button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'out')" class="w-7 h-7 rounded bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 flex items-center justify-center" title="Списание">
+                            <i class="fas fa-arrow-up text-xs"></i>
+                        </button>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-center">${img}</td>
+                <td class="px-4 py-3 font-medium text-blue-700 dark:text-blue-400 group-hover:underline">${item.name}${fileIcon}</td>
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${item.manuf || ''}</td>
+                <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.cat || 'Разное'}</td>
+                <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${item.qty}</td>
+                <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${res > 0 ? res : '-'}</td>
+                <td class="px-4 py-3 text-center font-bold ${freeColor}">${free}</td>
+                <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400">${item.cost.toLocaleString()} ₽</td>
+            `;
+            
+            fragment.appendChild(row);
+        }
+    }
+    
+    // Single DOM update - much faster than innerHTML
+    tbody.innerHTML = '';
+    tbody.appendChild(fragment);
 
+    // Update sort indicators
     document.querySelectorAll('.sortable-header').forEach(el => el.classList.remove('active'));
+    const activeHeader = document.querySelector(`.sortable-header[onclick*="setWarehouseSort('${key}')"]`);
+    if (activeHeader) activeHeader.classList.add('active');
+    
+    // Обновляем кнопки пагинации (на случай, если они еще не инициализированы)
+    updatePaginationButtons();
 }
 
 // --- QUICK MOVE LOGIC ---
@@ -704,16 +879,36 @@ function renderSpecList(pid) {
     
     ((db.specs || {})[pid]||[]).forEach(s => { 
         const ic = s.status === 'committed' ? '<i class="fas fa-lock text-red-500"></i>' : '<i class="fas fa-pen text-green-500"></i>'; 
-        c.innerHTML += `<div onclick="loadSpec('${s.id}')" class="p-3 border dark:border-slate-600 rounded mb-2 cursor-pointer bg-white dark:bg-slate-700 hover:shadow ${selectedSpecId === s.id ? 'ring-2 ring-blue-400' : ''}"><div class="flex justify-between font-bold text-sm"><span>${s.name}</span><span>${ic}</span></div><div class="text-xs text-slate-500 dark:text-slate-400">Позиций: ${s.items.length}</div></div>`; 
+        const isSelected = selectedSpecId === s.id;
+        const cardClasses = isSelected
+            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-500'
+            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600';
+        c.innerHTML += `<div onclick="loadSpec('${s.id}')" class="p-3 border rounded mb-2 cursor-pointer hover:shadow transition-colors ${cardClasses}">
+            <div class="flex justify-between items-center font-bold text-sm gap-2">
+                <span class="truncate">${s.name}</span>
+                <span class="flex items-center gap-2">
+                    ${ic}
+                    <button onclick="event.stopPropagation(); deleteSpec('${s.id}')" class="text-slate-400 hover:text-red-500" title="Удалить спецификацию">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </span>
+            </div>
+            <div class="text-xs text-slate-500 dark:text-slate-400">Позиций: ${s.items.length}</div>
+        </div>`; 
     }); 
 }
 
 function addNewSpecToProject() { 
+    if(!selectedProjectId) { 
+        alert("Сначала выберите проект из списка слева!"); 
+        return; 
+    }
+    openModal('addSpecModal');
+}
+
+function openCreateNewSpec() {
+    closeModal('addSpecModal');
     try { 
-        if(!selectedProjectId) { 
-            alert("Сначала выберите проект из списка слева!"); 
-            return; 
-        } 
         const n = prompt("Введите название спецификации (например: Электрика 1 этаж):"); 
         if(!n) return; 
         
@@ -741,6 +936,147 @@ function addNewSpecToProject() {
         console.error(e); 
         alert("Ошибка создания спецификации: " + e.message); 
     } 
+}
+
+function openSelectExistingSpec() {
+    closeModal('addSpecModal');
+    document.getElementById('existingSpecSearch').value = '';
+    renderExistingSpecsList();
+    openModal('selectSpecModal');
+}
+
+function renderExistingSpecsList(searchTerm = '') {
+    const list = document.getElementById('existingSpecList');
+    list.innerHTML = '';
+    
+    const search = searchTerm.toLowerCase().trim();
+    const allSpecs = [];
+    
+    // Collect all specs from all projects (except current)
+    Object.keys(db.specs || {}).forEach(projectId => {
+        if (projectId == selectedProjectId) return; // Skip current project
+        
+        const project = db.projects.find(p => p.id == parseInt(projectId));
+        if (!project) return;
+        
+        (db.specs[projectId] || []).forEach(spec => {
+            allSpecs.push({
+                spec: spec,
+                projectId: parseInt(projectId),
+                projectName: project.name,
+                projectNum: project.num || ''
+            });
+        });
+    });
+    
+    // Filter by search term
+    let filtered = allSpecs;
+    if (search) {
+        filtered = allSpecs.filter(item => 
+            item.spec.name.toLowerCase().includes(search) ||
+            item.projectName.toLowerCase().includes(search) ||
+            item.projectNum.toLowerCase().includes(search)
+        );
+    }
+    
+    // Sort by name
+    filtered.sort((a, b) => a.spec.name.localeCompare(b.spec.name));
+    
+    if (filtered.length === 0) {
+        list.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">Спецификации не найдены</div>';
+        return;
+    }
+    
+    filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-3 border-b dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition';
+        div.onclick = () => copySpecToProject(item.spec, item.projectId, item.projectName);
+        div.innerHTML = `
+            <div class="font-bold text-sm text-slate-800 dark:text-slate-200">${item.spec.name}</div>
+            <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Проект: ${item.projectName} ${item.projectNum ? `(${item.projectNum})` : ''}
+            </div>
+            <div class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                Позиций: ${item.spec.items.length} | 
+                Статус: ${item.spec.status === 'committed' ? 'Списана' : 'Черновик'}
+            </div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+function filterExistingSpecs() {
+    const searchTerm = document.getElementById('existingSpecSearch').value;
+    renderExistingSpecsList(searchTerm);
+}
+
+function copySpecToProject(sourceSpec, sourceProjectId, sourceProjectName) {
+    if (!confirm(`Скопировать спецификацию "${sourceSpec.name}" из проекта "${sourceProjectName}" в текущий проект?`)) {
+        return;
+    }
+    
+    try {
+        if(!db.specs || typeof db.specs !== 'object' || Array.isArray(db.specs)) { 
+            db.specs = {}; 
+        } 
+        if(!db.specs[selectedProjectId]) { 
+            db.specs[selectedProjectId] = []; 
+        }
+        
+        // Create a deep copy of the spec
+        const newSpec = {
+            id: 's_' + Date.now(),
+            name: sourceSpec.name + ' (Копия)',
+            status: 'draft', // Always create as draft
+            date: new Date().toLocaleDateString(),
+            items: sourceSpec.items.map(item => ({
+                ...item,
+                // Deep copy items
+                itemId: item.itemId,
+                qty: item.qty,
+                isCustom: item.isCustom,
+                name: item.name,
+                unit: item.unit,
+                cost: item.cost
+            }))
+        };
+        
+        db.specs[selectedProjectId].push(newSpec);
+        selectedSpecId = newSpec.id;
+        save();
+        closeModal('selectSpecModal');
+        showToast("Спецификация скопирована");
+        loadSpec(newSpec.id);
+    } catch (e) {
+        console.error(e);
+        alert("Ошибка копирования спецификации: " + e.message);
+    }
+}
+
+function deleteSpec(specId) {
+    if(!selectedProjectId) return;
+    const specs = (db.specs || {})[selectedProjectId] || [];
+    const idx = specs.findIndex(s => s.id === specId);
+    if(idx === -1) return;
+    
+    const spec = specs[idx];
+    const message = spec.status === 'committed'
+        ? `Спецификация "${spec.name}" уже списана.\nУдаление приведет к потере истории.\nУдалить?`
+        : `Удалить спецификацию "${spec.name}"?`;
+    
+    if(!confirm(message)) return;
+    
+    specs.splice(idx, 1);
+    
+    if(selectedSpecId === specId) {
+        selectedSpecId = null;
+        document.getElementById('specEditor').classList.add('hidden');
+        document.getElementById('specContentPlaceholder').classList.remove('hidden');
+    }
+    
+    save();
+    renderSpecList(selectedProjectId);
+    showToast("Спецификация удалена");
 }
 
 // --- CUSTOM ITEMS ---
@@ -801,33 +1137,256 @@ function loadSpec(sid) {
     tb.innerHTML = ''; 
     let tot = 0;
     
-    s.items.forEach((r, idx) => { 
-        let name, unit, cost, rowClass = "";
-        
-        if(r.isCustom) {
-            name = `<span class="text-yellow-700 dark:text-yellow-400 font-medium">${r.name}</span>`;
-            unit = r.unit;
-            cost = r.cost;
-            rowClass = "bg-yellow-50 dark:bg-yellow-900/20";
-        } else {
-            const i = db.items.find(x => x.id === r.itemId);
-            if(!i) return; 
-            name = i.name;
-            unit = i.unit;
-            cost = i.cost;
-        }
+    const itemsWithMeta = s.items
+        .map((item, originalIndex) => {
+            if(item.isCustom) {
+                return {
+                    isCustom: true,
+                    originalIndex,
+                    name: item.name || 'Нестандартная позиция',
+                    unit: item.unit || '',
+                    qty: item.qty,
+                    cost: parseFloat(item.cost) || 0,
+                    category: 'Нестандартные изделия',
+                    rowClass: "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-900 dark:text-yellow-200"
+                };
+            } else {
+                const baseItem = db.items.find(x => x.id === item.itemId);
+                if(!baseItem) return null;
+                return {
+                    isCustom: false,
+                    originalIndex,
+                    name: baseItem.name || 'Товар',
+                    unit: baseItem.unit || '',
+                    qty: item.qty,
+                    cost: parseFloat(baseItem.cost) || 0,
+                    category: baseItem.cat || 'Без категории',
+                    rowClass: ""
+                };
+            }
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+            const catDiff = a.category.localeCompare(b.category, 'ru', { sensitivity: 'base' });
+            if (catDiff !== 0) return catDiff;
+            return a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' });
+        });
 
-        tot += cost * r.qty; 
-        const del = s.status==='draft' ? `<button onclick="remSpecItem(${idx})" class="text-red-400"><i class="fas fa-trash"></i></button>` : ''; 
-        tb.innerHTML += `<tr class="border-b dark:border-slate-700 ${rowClass}"><td class="px-4 py-2 text-sm">${name}</td><td class="text-center text-sm">${r.qty} ${unit}</td><td class="text-right text-sm">${(cost*r.qty).toLocaleString()}</td><td class="text-right">${del}</td></tr>`; 
+    let currentCategory = null;
+
+    const isDraft = s.status === 'draft';
+
+    itemsWithMeta.forEach((entry, idx) => { 
+        const { name, unit, qty, cost, category, rowClass, originalIndex, isCustom } = entry;
+        const rowTotal = cost * qty;
+        tot += rowTotal; 
+        const qtyCell = isDraft
+            ? `<input type="number" min="0" step="0.01" value="${qty}" class="spec-qty-input w-20 text-center border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="updateSpecItemQty(${originalIndex}, this.value)" onclick="event.stopPropagation()">`
+            : qty;
+
+        if (category !== currentCategory) {
+            currentCategory = category;
+            tb.innerHTML += `<tr class="bg-slate-100 dark:bg-slate-800/60">
+                <td colspan="6" class="px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300">${category}</td>
+            </tr>`;
+        }
+        
+        const del = isDraft ? `<button onclick="event.stopPropagation(); remSpecItem(${originalIndex})" class="text-red-400"><i class="fas fa-trash"></i></button>` : ''; 
+        const itemId = !isCustom ? s.items[originalIndex].itemId : null;
+        const clickHandler = itemId ? `onclick="openItemCardViewOnly(${itemId})" style="cursor: pointer;"` : '';
+        const hoverClass = itemId ? 'hover:bg-blue-50 dark:hover:bg-slate-700 transition' : '';
+        tb.innerHTML += `<tr class="border-b dark:border-slate-700 ${rowClass} ${hoverClass}" ${clickHandler}>
+            <td class="text-center text-sm px-2">${idx + 1}</td>
+            <td class="px-4 py-2 text-sm">${isCustom ? `<span class="font-medium">${name}</span>` : `<span class="text-blue-600 dark:text-blue-400 hover:underline">${name}</span>`}</td>
+            <td class="text-center text-sm">${unit || '-'}</td>
+            <td class="text-center text-sm">${qtyCell}</td>
+            <td class="text-right text-sm">${rowTotal.toLocaleString()}</td>
+            <td class="text-right">${del}</td>
+        </tr>`; 
     });
-    document.getElementById('specTotalCost').textContent = tot.toLocaleString() + ' ₽';
+    const formattedTotal = `${tot.toLocaleString()} ₽`;
+    const totalEl = document.getElementById('specTotalCost');
+    if (totalEl) {
+        totalEl.textContent = formattedTotal;
+    }
+    
+    resetSpecSearchInput();
 }
+
+function resetSpecSearchInput() {
+    const input = document.getElementById('specItemSearch');
+    const results = document.getElementById('specSearchResults');
+    if(input) {
+        input.value = '';
+        delete input.dataset.category;
+        delete input.dataset.itemId;
+    }
+    if(results) {
+        results.classList.add('hidden');
+        results.innerHTML = '';
+    }
+}
+
+function handleSpecSearch(isTyping = false) {
+    const input = document.getElementById('specItemSearch');
+    const results = document.getElementById('specSearchResults');
+    if(!input || !results) return;
+    
+    if(isTyping) {
+        delete input.dataset.itemId;
+    }
+    
+    let rawValue = input.value;
+    let trimmed = rawValue.trim();
+    
+    // If field is empty -> show categories
+    if(trimmed.length === 0 && !input.dataset.category) {
+        delete input.dataset.itemId;
+        renderSpecCategoryList(results);
+        return;
+    }
+    
+    const arrowIdx = rawValue.indexOf('→');
+    if(arrowIdx === -1 && trimmed.length === 0) {
+        delete input.dataset.category;
+        delete input.dataset.itemId;
+        renderSpecCategoryList(results);
+        return;
+    }
+    
+    let selectedCategory = input.dataset.category || '';
+    let searchTerm = '';
+    let items = db.items || [];
+    
+    if(selectedCategory) {
+        items = items.filter(i => i.cat === selectedCategory);
+        searchTerm = arrowIdx >= 0 ? rawValue.slice(arrowIdx + 1).trim().toLowerCase() : trimmed.toLowerCase();
+    } else {
+        searchTerm = trimmed.toLowerCase();
+    }
+    
+    if(searchTerm && !selectedCategory) {
+        items = items.filter(i => (`${i.cat} ${i.name}`).toLowerCase().includes(searchTerm));
+    } else if(searchTerm && selectedCategory) {
+        items = items.filter(i => i.name.toLowerCase().includes(searchTerm));
+    }
+    
+    items.sort((a, b) => {
+        if(a.cat === b.cat) return a.name.localeCompare(b.name);
+        return a.cat.localeCompare(b.cat);
+    });
+    
+    const maxResults = 80;
+    renderSpecItemResults(results, items.slice(0, maxResults), !!selectedCategory);
+}
+
+function renderSpecCategoryList(resultsEl) {
+    const cats = [...new Set((db.items || []).map(i => i.cat || 'Без категории'))].sort();
+    if(!cats.length) {
+        resultsEl.innerHTML = '<div class="px-3 py-2 text-slate-400 text-sm">Нет категорий</div>';
+        resultsEl.classList.remove('hidden');
+        return;
+    }
+    let html = `<div class="px-3 py-2 text-blue-600 hover:bg-blue-50 cursor-pointer text-sm font-medium border-b dark:border-slate-600" onclick="clearSpecCategory()">Все категории</div>`;
+    cats.forEach(cat => {
+        html += `<div class="px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-600 cursor-pointer text-sm text-slate-700 dark:text-slate-100 border-b dark:border-slate-600 last:border-0" data-cat="${escapeAttr(cat)}" onclick="selectSpecCategory(this.dataset.cat)">${cat}</div>`;
+    });
+    resultsEl.innerHTML = html;
+    resultsEl.classList.remove('hidden');
+}
+
+function renderSpecItemResults(resultsEl, items, groupedByCategory) {
+    if(!items.length) {
+        resultsEl.innerHTML = '<div class="px-3 py-2 text-slate-400 text-sm">Ничего не найдено</div>';
+        resultsEl.classList.remove('hidden');
+        return;
+    }
+    let html = '';
+    let currentCat = '';
+    items.forEach(item => {
+        if(!groupedByCategory) {
+            if(item.cat !== currentCat) {
+                currentCat = item.cat;
+                html += `<div class="px-3 py-1 text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50 dark:bg-slate-600 dark:text-slate-300">${currentCat}</div>`;
+            }
+        }
+        html += `<div class="px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-600 cursor-pointer flex justify-between items-center text-sm" onclick="selectSpecSearchItem(${item.id})">
+            <span class="text-slate-700 dark:text-slate-100">${item.name}</span>
+            <span class="text-xs text-slate-400">Ост: ${item.qty}</span>
+        </div>`;
+    });
+    resultsEl.innerHTML = html;
+    resultsEl.classList.remove('hidden');
+}
+
+function selectSpecSearchItem(itemId) {
+    const input = document.getElementById('specItemSearch');
+    const results = document.getElementById('specSearchResults');
+    const item = db.items.find(i => i.id == itemId);
+    if(!input || !item) return;
+    
+    input.value = `${item.cat} → ${item.name}`;
+    input.dataset.itemId = item.id;
+    input.dataset.category = item.cat;
+    if(results) results.classList.add('hidden');
+}
+
+function selectSpecCategory(cat) {
+    const input = document.getElementById('specItemSearch');
+    if(!input) return;
+    input.dataset.category = cat;
+    input.value = `${cat} → `;
+    delete input.dataset.itemId;
+    handleSpecSearch();
+}
+
+function clearSpecCategory() {
+    const input = document.getElementById('specItemSearch');
+    if(!input) return;
+    delete input.dataset.category;
+    delete input.dataset.itemId;
+    input.value = '';
+    handleSpecSearch();
+}
+
+function escapeAttr(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.addEventListener('click', (event) => {
+    const panel = document.getElementById('specAddPanel');
+    const results = document.getElementById('specSearchResults');
+    if(!panel || !results) return;
+    if(!panel.contains(event.target)) {
+        results.classList.add('hidden');
+    }
+});
 
 function remSpecItem(idx) {
     if(!confirm("Удалить позицию?")) return;
     const s = db.specs[selectedProjectId].find(x => x.id === selectedSpecId);
     s.items.splice(idx, 1);
+    save();
+    loadSpec(selectedSpecId);
+}
+
+function updateSpecItemQty(idx, rawValue) {
+    if(!selectedProjectId || !selectedSpecId) return;
+    const qty = parseFloat(rawValue);
+    if(isNaN(qty)) {
+        showToast("Введите корректное количество");
+        loadSpec(selectedSpecId);
+        return;
+    }
+    if(qty < 0) {
+        showToast("Количество не может быть отрицательным");
+        loadSpec(selectedSpecId);
+        return;
+    }
+    const specList = (db.specs || {})[selectedProjectId] || [];
+    const spec = specList.find(x => x.id === selectedSpecId);
+    if(!spec || !spec.items[idx]) return;
+    spec.items[idx].qty = qty;
     save();
     loadSpec(selectedSpecId);
 }
@@ -872,29 +1431,119 @@ function printSpec() {
     const project = db.projects.find(p => p.id === selectedProjectId);
     const spec = db.specs[selectedProjectId].find(s => s.id === selectedSpecId);
     if(!project || !spec) return;
-    let rows = ''; let total = 0;
-
-    spec.items.forEach((item, index) => {
-        let name, unit, cost, sum;
-        if (item.isCustom) {
-            name = item.name + " (Заказ)";
-            unit = item.unit;
-            cost = item.cost;
-        } else {
-            const dbItem = db.items.find(i => i.id === item.itemId);
-            if(!dbItem) return;
-            name = dbItem.name;
-            unit = dbItem.unit;
-            cost = dbItem.cost;
+    
+    const itemsWithMeta = spec.items
+        .map((item) => {
+            if (item.isCustom) {
+                const cost = parseFloat(item.cost) || 0;
+                return {
+                    isCustom: true,
+                    name: item.name || 'Нестандартная позиция',
+                    unit: item.unit || '',
+                    qty: item.qty,
+                    cost,
+                    sum: cost * item.qty,
+                    category: 'Нестандартные изделия'
+                };
+            } else {
+                const dbItem = db.items.find(i => i.id === item.itemId);
+                if(!dbItem) return null;
+                const cost = parseFloat(dbItem.cost) || 0;
+                return {
+                    isCustom: false,
+                    name: dbItem.name,
+                    unit: dbItem.unit || '',
+                    qty: item.qty,
+                    cost,
+                    sum: cost * item.qty,
+                    category: dbItem.cat || 'Без категории'
+                };
+            }
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+            const catDiff = a.category.localeCompare(b.category, 'ru', { sensitivity: 'base' });
+            if (catDiff !== 0) return catDiff;
+            return a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' });
+        });
+    
+    let groupedRows = '';
+    let currentCategory = null;
+    let total = 0;
+    
+    itemsWithMeta.forEach((item, index) => {
+        total += item.sum;
+        if(item.category !== currentCategory) {
+            currentCategory = item.category;
+            groupedRows += `<tr class="bg-slate-50">
+                <td colspan="6" class="p-2 text-xs font-bold uppercase tracking-widest">${currentCategory}</td>
+            </tr>`;
         }
-        sum = cost * item.qty;
-        total += sum;
-        rows += `<tr class="border-b"><td class="p-2 text-center">${index + 1}</td><td class="p-2">${name}</td><td class="p-2 text-center">${unit}</td><td class="p-2 text-center">${item.qty}</td><td class="p-2 text-right">${cost}</td><td class="p-2 text-right font-bold">${sum}</td></tr>`;
+        groupedRows += `<tr class="border-b">
+            <td class="p-2 text-center">${index + 1}</td>
+            <td class="p-2">${item.isCustom ? `${item.name} (нестандарт)` : item.name}</td>
+            <td class="p-2 text-center">${item.unit || '-'}</td>
+            <td class="p-2 text-center">${item.qty}</td>
+            <td class="p-2 text-right">${item.cost.toLocaleString()}</td>
+            <td class="p-2 text-right font-bold">${item.sum.toLocaleString()}</td>
+        </tr>`;
     });
     
     const statusText = spec.status === 'committed' ? '<div class="font-bold text-lg mt-2">Статус: Списано</div>' : '';
-
-    const html = `<div class="max-w-4xl mx-auto"><div class="flex justify-between items-end border-b-2 border-black pb-4 mb-6"><div><h1 class="text-2xl font-bold uppercase">Спецификация на материалы</h1><div class="mt-2 text-sm"><div><strong>Проект:</strong> ${project.name}</div><div><strong>Заказчик:</strong> ${project.client}</div><div><strong>Спецификация:</strong> ${spec.name}</div></div></div><div class="text-right text-sm"><div>Дата: ${new Date().toLocaleDateString()}</div>${statusText}</div></div><table class="w-full text-sm mb-8"><thead><tr class="border-b-2 border-black"><th class="p-2 text-center w-10">№</th><th class="p-2 text-left">Наименование</th><th class="p-2 text-center w-16">Ед.</th><th class="p-2 text-center w-20">Кол-во</th><th class="p-2 text-right w-24">Цена</th><th class="p-2 text-right w-28">Сумма</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="border-t-2 border-black"><td colspan="5" class="p-2 text-right font-bold text-lg">ИТОГО:</td><td class="p-2 text-right font-bold text-lg">${total.toLocaleString()} ₽</td></tr></tfoot></table><div class="flex justify-between mt-12 text-sm"><div><div class="border-t border-black w-48 pt-1">Сдал (Кладовщик)</div></div><div><div class="border-t border-black w-48 pt-1">Принял (Монтажник)</div></div></div></div>`;
+    
+    const tableBlock = `
+        <div class="mb-6">
+            <h2 class="text-lg font-bold mb-3">Состав спецификации</h2>
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b-2 border-black">
+                        <th class="p-2 text-center w-10">№</th>
+                        <th class="p-2 text-left">Наименование</th>
+                        <th class="p-2 text-center w-16">Ед.</th>
+                        <th class="p-2 text-center w-20">Кол-во</th>
+                        <th class="p-2 text-right w-24">Цена</th>
+                        <th class="p-2 text-right w-28">Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>${groupedRows}</tbody>
+            </table>
+        </div>
+    `;
+    
+    const html = `
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold uppercase">Спецификация на материалы</h1>
+                    <div class="mt-2 text-sm">
+                        <div><strong>Проект:</strong> ${project.name}</div>
+                        <div><strong>Заявка:</strong> ${project.num || '—'}</div>
+                        <div><strong>Заказчик:</strong> ${project.client}</div>
+                        <div><strong>Спецификация:</strong> ${spec.name}</div>
+                    </div>
+                </div>
+                <div class="text-right text-sm">
+                    <div>Дата: ${new Date().toLocaleDateString()}</div>
+                    ${statusText}
+                </div>
+            </div>
+            ${tableBlock}
+            <div class="border-t-2 border-black pt-4 mb-8">
+                <div class="text-right">
+                    <div class="text-xl font-bold">ОБЩИЙ ИТОГО: ${total.toLocaleString()} ₽</div>
+                </div>
+            </div>
+            <div class="flex justify-between mt-12 text-sm">
+                <div>
+                    <div class="border-t border-black w-48 pt-1">Сдал (Кладовщик)</div>
+                </div>
+                <div>
+                    <div class="border-t border-black w-48 pt-1">Принял (Монтажник)</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
     const printArea = document.getElementById('printArea'); 
     printArea.innerHTML = html; 
     window.print();
@@ -912,11 +1561,18 @@ function renderDashboard() {
     const budgetEl = document.getElementById('dashActiveBudget');
     if(budgetEl) budgetEl.innerText = budget.toLocaleString();
     
-    let lowStock = db.items.filter(i => i.qty < 5);
-    document.getElementById('dashLowStockCount').innerText = lowStock.length;
+    const lowStockItems = (db.items || []).map(item => {
+        const free = item.qty - getReserve(item.id);
+        return {...item, free};
+    }).filter(item => item.free < 0);
+    document.getElementById('dashLowStockCount').innerText = lowStockItems.length;
     
     const lsTable = document.getElementById('dashLowStockTable');
-    lsTable.innerHTML = lowStock.slice(0, 5).map(i => `<tr class="border-b dark:border-slate-700"><td class="py-2 font-medium text-slate-700 dark:text-slate-300">${i.name}</td><td class="py-2 text-right font-bold text-red-600 dark:text-red-400">${i.qty} ${i.unit}</td></tr>`).join('') || '<tr><td colspan="2" class="py-4 text-center text-slate-400 text-sm">Все в порядке</td></tr>';
+    lsTable.innerHTML = lowStockItems.slice(0, 5)
+        .map(i => `<tr class="border-b dark:border-slate-700">
+            <td class="py-2 font-medium text-slate-700 dark:text-slate-300">${i.name}</td>
+            <td class="py-2 text-right font-bold text-red-600 dark:text-red-400">${i.free} ${i.unit}</td>
+        </tr>`).join('') || '<tr><td colspan="2" class="py-4 text-center text-slate-400 text-sm">Все в порядке</td></tr>';
     
     const today = new Date();
     const upcomingDeadlines = (db.projects || []).filter(p => {
@@ -953,42 +1609,13 @@ function renderDashboard() {
     }).join('') || '<tr><td colspan="3" class="py-4 text-center text-slate-400 text-sm">Нет операций</td></tr>';
 }
 
-function filterSpecSearch() { 
-    const v = document.getElementById('specSearchInput').value.toLowerCase();
-    const r = document.getElementById('specSearchResults'); 
-    
-    if(v.length<1) { 
-        r.classList.add('hidden'); 
-        return; 
-    } 
-    
-    const m = db.items.filter(i => i.name.toLowerCase().includes(v)); 
-    r.innerHTML = ''; 
-    
-    if(m.length) { 
-        r.classList.remove('hidden'); 
-        m.forEach(x => { 
-            const d = document.createElement('div'); 
-            d.className="p-2 hover:bg-slate-100 dark:hover:bg-slate-600 cursor-pointer text-sm border-b dark:border-slate-600"; 
-            d.innerHTML=`${x.name} <span class="text-slate-400 text-xs">Ост: ${x.qty}</span>`; 
-            d.onclick=()=>{
-                document.getElementById('specSearchInput').value=x.name; 
-                document.getElementById('specSearchInput').dataset.sid=x.id; 
-                r.classList.add('hidden');
-            }; 
-            r.appendChild(d); 
-        }); 
-    } else {
-        r.classList.add('hidden'); 
-    }
-}
-
 function addToSpec() { 
     if(!selectedSpecId) return; 
-    const iid = document.getElementById('specSearchInput').dataset.sid;
+    const itemInput = document.getElementById('specItemSearch');
+    const iid = itemInput ? itemInput.dataset.itemId : null;
     const qty = parseFloat(document.getElementById('specAddQty').value); 
     
-    if(!iid||!qty) return; 
+    if(!iid || !qty) return showToast("Выберите товар и количество"); 
     
     const s = db.specs[selectedProjectId].find(x => x.id === selectedSpecId); 
     const ex = s.items.find(x => x.itemId == iid); 
@@ -1000,8 +1627,9 @@ function addToSpec() {
     }
     
     save(); 
-    document.getElementById('specSearchInput').value = '';
+    resetSpecSearchInput();
     loadSpec(selectedSpecId); 
+    showToast("Добавлено");
 }
 
 function importData(input) {
@@ -1030,6 +1658,152 @@ function importData(input) {
     reader.readAsText(file);
     input.value = ''; 
 }
+
+// --- LEGACY IMPORT (CSV) ---
+function importLegacyCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        if (!confirm("Добавить данные из CSV к текущей базе? (Дубликаты могут быть созданы)")) return;
+
+        try {
+            const rows = parseCSV(text);
+            let importedCount = 0;
+            
+            // Skip header row (index 0)
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length < 2) continue; // Skip empty rows
+
+                // Mapping based on "7LampData - Sklad.csv" structure:
+                // 0:ItemID, 1:Наименование, 2:Производитель, 3:Категория, 4:Склад, 5:Ед.изм., 6:Стоимость, ... 10:Характеристики, ... 12:Изображение
+                
+                // Clean up cost string (remove spaces, commas to dots if needed)
+                let costStr = row[6] ? row[6].toString().replace(/\s/g, '').replace(',', '.') : '0';
+                let qtyStr = row[4] ? row[4].toString().replace(/\s/g, '').replace(',', '.') : '0';
+                let imgPath = row[12] || '';
+
+                // Generate a numeric ID to be compatible with new system, 
+                // but we can store the old ID in a hidden field if needed. 
+                // Using Date.now() + loop index to ensure uniqueness during fast import
+                const newItem = {
+                    id: Date.now() + i, 
+                    name: row[1] || 'Без названия',
+                    manuf: row[2] || '',
+                    cat: row[3] || 'Разное',
+                    qty: parseFloat(qtyStr) || 0,
+                    unit: row[5] || 'шт.',
+                    cost: parseFloat(costStr) || 0,
+                    chars: row[10] || '',
+                    img: imgPath, 
+                    file: row[14] || ''
+                };
+
+                db.items.push(newItem);
+                
+                // Add initial movement record
+                if (newItem.qty > 0) {
+                    db.movements.push({
+                        id: 'mov_imp_' + newItem.id,
+                        date: new Date().toLocaleString(),
+                        type: 'in',
+                        itemId: newItem.id,
+                        itemName: newItem.name,
+                        qty: newItem.qty
+                    });
+                }
+                importedCount++;
+            }
+
+            save();
+            closeModal('settingsModal');
+            showToast(`Импортировано ${importedCount} товаров`);
+            
+        } catch (err) {
+            console.error(err);
+            alert("Ошибка при разборе CSV: " + err.message);
+        }
+    };
+    // Read as Windows-1251 if it's an old Russian Excel file, otherwise UTF-8. 
+    // Usually modern CSVs are UTF-8, but Excel often exports CP1251.
+    // Let's try UTF-8 first. If garbage, user might need to convert file.
+    reader.readAsText(file, 'UTF-8'); 
+    input.value = '';
+}
+
+// Robust CSV Parser that handles quoted strings containing commas
+function parseCSV(str) {
+    const arr = [];
+    let quote = false;  // 'true' means we're inside a quoted field
+    let col = 0, c = 0;
+
+    for (; c < str.length; c++) {
+        let cc = str[c], nc = str[c+1];        // Current character, next character
+        arr[col] = arr[col] || [];             // Create a new row if necessary
+        arr[col].push(cc);                     // Push current character to the current column
+
+        // If the current character is a quote
+        if (cc == '"' && quote && nc == '"') { // Skip double quotes inside quotes
+            arr[col].pop(); 
+            arr[col].push(cc); 
+            c++; 
+            continue; 
+        }
+        if (cc == '"') { 
+            quote = !quote; 
+            if (quote) arr[col].pop(); // Don't include the opening quote
+            if (!quote) arr[col].pop(); // Don't include the closing quote
+            continue; 
+        }
+
+        // If it's a comma and we're not in a quote, move to next column
+        if (cc == ',' && !quote) { 
+            arr[col].pop(); // remove the comma
+            continue; 
+        }
+
+        // If it's a newline and we're not in a quote, move to next row
+        if (cc == '\r' && nc == '\n' && !quote) { 
+            arr[col].pop(); 
+            c++; 
+            col++; 
+            continue; 
+        }
+        if (cc == '\n' && !quote) { 
+            arr[col].pop(); 
+            col++; 
+            continue; 
+        }
+    }
+    
+    // Join the characters back into strings
+    return arr.map(row => {
+        // Split logic above pushed chars, now we need to join them based on comma separation logic
+        // Actually the loop above is a bit simplistic for direct array-of-arrays. 
+        // Let's use a cleaner regex approach which is often more reliable for standard CSV.
+        return [];
+    });
+}
+
+// Overwriting parseCSV with a better Regex implementation
+parseCSV = function(text) {
+    let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
+    for (l of text) {
+        if ('"' === l) {
+            if (s && l === p) row[i] += l;
+            s = !s;
+        } else if (',' === l && s) l = row[++i] = '';
+        else if ('\n' === l && s) {
+            if ('\r' === p) row[i] = row[i].slice(0, -1);
+            row = ret[++r] = ['']; i = 0;
+        } else row[i] += l;
+        p = l;
+    }
+    return ret;
+};
 
 function exportData() {
     const dataStr = JSON.stringify(db);
@@ -1152,7 +1926,7 @@ function createNewProject() {
     closeModal('createProjectModal'); 
 }
 
-function openItemCard(id) { 
+function openItemCard(id, viewOnly = false) { 
     const i = db.items.find(x => x.id === id); 
     if(!i) return; 
     
@@ -1166,6 +1940,9 @@ function openItemCard(id) {
     document.getElementById('cardChars').value = i.chars; 
     document.getElementById('cardImg').value = i.img || ''; 
     document.getElementById('cardFile').value = i.file || ''; 
+    
+    // Устанавливаем режим просмотра
+    setItemCardViewMode(viewOnly);
     
     updateCardPreview(); 
     
@@ -1196,6 +1973,54 @@ function openItemCard(id) {
     openModal('itemCardModal'); 
 }
 
+function openItemCardViewOnly(id) {
+    openItemCard(id, true);
+}
+
+function setItemCardViewMode(viewOnly) {
+    const inputs = ['cardName', 'cardManuf', 'cardCat', 'cardUnit', 'cardCost', 'cardChars', 'cardImg', 'cardFile'];
+    const saveBtn = document.querySelector('#itemCardModal button[onclick*="saveItemFromCard"]');
+    const deleteBtn = document.querySelector('#itemCardModal button[onclick*="deleteItemFromCard"]');
+    
+    inputs.forEach(inputId => {
+        const el = document.getElementById(inputId);
+        if (el) {
+            if (viewOnly) {
+                el.setAttribute('readonly', 'readonly');
+                el.classList.add('bg-slate-100', 'dark:bg-slate-700');
+                el.classList.remove('dark:bg-slate-600');
+                el.style.cursor = 'default';
+            } else {
+                el.removeAttribute('readonly');
+                el.classList.remove('bg-slate-100');
+                if (!el.classList.contains('bg-slate-100')) {
+                    // Восстанавливаем оригинальные классы для редактируемых полей
+                    if (inputId === 'cardQty') {
+                        el.classList.add('bg-slate-100', 'text-slate-500', 'dark:bg-slate-600', 'dark:text-slate-400', 'dark:border-slate-600');
+                    } else {
+                        el.classList.add('dark:bg-slate-700', 'dark:border-slate-600', 'dark:text-white');
+                    }
+                }
+                el.style.cursor = '';
+            }
+        }
+    });
+    
+    // Скрываем/показываем кнопки сохранения и удаления
+    if (saveBtn) {
+        saveBtn.style.display = viewOnly ? 'none' : '';
+    }
+    if (deleteBtn) {
+        deleteBtn.style.display = viewOnly ? 'none' : '';
+    }
+    
+    // Сохраняем режим просмотра в data-атрибуте модального окна
+    const modal = document.getElementById('itemCardModal');
+    if (modal) {
+        modal.dataset.viewOnly = viewOnly ? 'true' : 'false';
+    }
+}
+
 function updateCardPreview() { 
     const url = document.getElementById('cardImg').value; 
     const imgEl = document.getElementById('cardImgPreview'); 
@@ -1208,18 +2033,90 @@ function updateCardPreview() {
     } 
 }
 
+function deleteItemFromCard() {
+    const idVal = document.getElementById('cardId').value;
+    // ID can be int (old data) or string (imported data potentially, though we convert to int/date in import).
+    // Let's handle both, `cardId` value is string from input.
+    
+    const item = db.items.find(x => x.id == idVal);
+    if(!item) return;
+
+    if(!confirm(`Вы точно хотите удалить товар "${item.name}"?\nЭто действие нельзя отменить.`)) return;
+
+    // Check for usage in active projects (draft specs)
+    let inUse = false;
+    (db.projects || []).forEach(p => {
+        if(p.status === 'active') {
+            ((db.specs || {})[p.id] || []).forEach(s => {
+                 if(s.status === 'draft') {
+                     if(s.items.find(i => i.itemId == item.id)) inUse = true;
+                 }
+            });
+        }
+    });
+
+    if(inUse) {
+        if(!confirm("Внимание! Этот товар используется в активных спецификациях проектов. Удаление может привести к ошибкам в проектах.\n\nВсе равно удалить?")) return;
+    }
+
+    const idx = db.items.indexOf(item);
+    if (idx > -1) {
+        db.items.splice(idx, 1);
+        save();
+        closeModal('itemCardModal');
+        refreshAll();
+        showToast("Товар удален");
+    }
+}
+
 function saveItemFromCard() { 
-    const i = db.items.find(x => x.id == document.getElementById('cardId').value); 
-    i.name=document.getElementById('cardName').value; 
-    i.manuf=document.getElementById('cardManuf').value; 
-    i.cat=document.getElementById('cardCat').value; 
-    i.unit=document.getElementById('cardUnit').value; 
-    i.cost=parseFloat(document.getElementById('cardCost').value); 
-    i.chars=document.getElementById('cardChars').value; 
-    i.img=document.getElementById('cardImg').value; 
-    i.file=document.getElementById('cardFile').value; 
-    save(); 
-    closeModal('itemCardModal'); 
+    const itemId = parseInt(document.getElementById('cardId').value);
+    const i = db.items.find(x => x.id == itemId); 
+    if (!i) return;
+    
+    // Show saving indicator - find button in modal
+    const modal = document.getElementById('itemCardModal');
+    const saveBtn = modal ? modal.querySelector('button[onclick*="saveItemFromCard"]') : null;
+    const originalHTML = saveBtn ? saveBtn.innerHTML : '';
+    
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...';
+    }
+    
+    // Update item data
+    i.name = document.getElementById('cardName').value; 
+    i.manuf = document.getElementById('cardManuf').value; 
+    i.cat = document.getElementById('cardCat').value; 
+    i.unit = document.getElementById('cardUnit').value; 
+    i.cost = parseFloat(document.getElementById('cardCost').value) || 0; 
+    i.chars = document.getElementById('cardChars').value; 
+    i.img = document.getElementById('cardImg').value; 
+    i.file = document.getElementById('cardFile').value; 
+    
+    // Save without full refresh
+    save(false);
+    
+    // Update only necessary parts (async to not block UI)
+    setTimeout(() => {
+        renderCategoryList();
+        renderWarehouse();
+        renderDatalists();
+        // Update dashboard if it's visible
+        const dashboardView = document.getElementById('view-dashboard');
+        if (dashboardView && !dashboardView.classList.contains('hidden')) {
+            renderDashboard();
+        }
+        
+        // Restore button and close modal
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalHTML;
+        }
+        
+        closeModal('itemCardModal');
+        showToast('Товар сохранен');
+    }, 50); // Small delay to show spinner
 }
 
 function switchModalTab(t) { 
@@ -1232,7 +2129,16 @@ function switchModalTab(t) {
 }
 
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function closeModal(id) { 
+    const modal = document.getElementById(id);
+    if (modal) {
+        modal.classList.add('hidden');
+        // Сбрасываем режим просмотра для карточки товара
+        if (id === 'itemCardModal') {
+            setItemCardViewMode(false);
+        }
+    }
+}
 function openSettings() { openModal('settingsModal'); }
 
 function openProjectCard(id) { 
