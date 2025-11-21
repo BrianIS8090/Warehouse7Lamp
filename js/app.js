@@ -36,7 +36,7 @@ let totalPages = 1;
 
 let sortState = {
     warehouse: { key: 'id', dir: 'desc' },
-    projects: { key: 'id', dir: 'desc' }
+    projects: { key: 'num', dir: 'desc' }
 };
 
 // --- PERFORMANCE OPTIMIZATION ---
@@ -354,6 +354,21 @@ function showToast(m){
     setTimeout(()=>t.classList.remove('show'),2000);
 }
 
+function formatNumber(value, decimals = 2) {
+    const num = Number(value);
+    if (Number.isNaN(num)) return '0';
+    const rounded = Number(num.toFixed(decimals));
+    let str = rounded.toFixed(decimals);
+    if (str.includes('.')) {
+        str = str.replace(/\.?0+$/, '');
+    }
+    return str === '' ? '0' : str;
+}
+
+function formatCurrency(value, decimals = 2) {
+    return `${formatNumber(value, decimals)} ₽`;
+}
+
 function refreshAll(){ 
     renderCategoryList(); 
     renderWarehouse(); 
@@ -431,6 +446,8 @@ function renderCategoryList() {
 
     const totalUnique = items.length;
     const totalUnits = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    const formattedTotalUnique = formatNumber(totalUnique);
+    const formattedTotalUnits = formatNumber(totalUnits);
     
     const cats = [...new Set(items.map(i => i.cat))].sort((a, b) => {
         const labelA = (a || '').toLowerCase();
@@ -452,8 +469,8 @@ function renderCategoryList() {
     let html = `
         <div class="p-3 mb-2 rounded-lg bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600">
             <div class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-300 tracking-wide">Уникальных товаров</div>
-            <div class="text-2xl font-extrabold text-slate-800 dark:text-white">${totalUnique.toLocaleString('ru-RU')}</div>
-            <div class="text-[11px] text-slate-500 dark:text-slate-300 mt-1">Суммарный остаток: ${totalUnits.toLocaleString('ru-RU')}</div>
+            <div class="text-2xl font-extrabold text-slate-800 dark:text-white">${formattedTotalUnique}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-300 mt-1">Суммарный остаток: ${formattedTotalUnits}</div>
         </div>
     `;
 
@@ -461,7 +478,7 @@ function renderCategoryList() {
     html += `
         <div onclick="filterCat('all')" class="${baseClass} ${allActive ? activeClass : inactiveClass}">
             <span>Все категории</span>
-            <span class="text-[11px] font-semibold ${badgeClass(allActive)}">${totalUnique.toLocaleString('ru-RU')}</span>
+            <span class="text-[11px] font-semibold ${badgeClass(allActive)}">${formattedTotalUnique}</span>
         </div>
     `;
 
@@ -474,7 +491,7 @@ function renderCategoryList() {
         html += `
             <div onclick='${handler}' class="${baseClass} ${isActive ? activeClass : inactiveClass}">
                 <span class="truncate">${displayName}</span>
-                <span class="text-[11px] font-semibold ${badgeClass(isActive)}">${count.toLocaleString('ru-RU')}</span>
+                <span class="text-[11px] font-semibold ${badgeClass(isActive)}">${formatNumber(count)}</span>
             </div>
         `;
     }); 
@@ -670,6 +687,10 @@ function renderWarehouse() {
             const res = getReserve(item.id);
             const free = item.qty - res;
             const freeColor = free < 0 ? 'text-red-600 dark:text-red-400' : (free < 5 ? 'text-orange-600 dark:text-orange-400' : 'text-blue-600 dark:text-blue-400');
+            const qtyDisplay = formatNumber(item.qty);
+            const resDisplay = res > 0 ? formatNumber(res) : '-';
+            const freeDisplay = formatNumber(free);
+            const costDisplay = formatCurrency(item.cost);
             
             const row = document.createElement('tr');
             row.className = 'border-b dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition h-14 group';
@@ -705,10 +726,10 @@ function renderWarehouse() {
                 <td class="px-4 py-3 font-medium text-blue-700 dark:text-blue-400 group-hover:underline">${item.name}${fileIcon}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${item.manuf || ''}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.cat || 'Разное'}</td>
-                <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${item.qty}</td>
-                <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${res > 0 ? res : '-'}</td>
-                <td class="px-4 py-3 text-center font-bold ${freeColor}">${free}</td>
-                <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400">${item.cost.toLocaleString()} ₽</td>
+                <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${qtyDisplay}</td>
+                <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${resDisplay}</td>
+                <td class="px-4 py-3 text-center font-bold ${freeColor}">${freeDisplay}</td>
+                <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400">${costDisplay}</td>
             `;
             
             fragment.appendChild(row);
@@ -1027,10 +1048,11 @@ function renderHistoryTable() {
     const t = document.getElementById('movementHistory'); 
     t.innerHTML = ''; 
     (db.movements || []).slice(0, 50).forEach(m => {
+        const qtyDisplay = formatNumber(m.qty);
         t.innerHTML += `<tr class="border-b dark:border-slate-700">
             <td class="p-2 text-slate-500 dark:text-slate-400">${m.date}</td>
             <td class="p-2">${m.itemName}</td>
-            <td class="p-2 text-right font-bold ${m.type==='in'?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'}">${m.type==='in'?'+':'-'}${m.qty}</td>
+            <td class="p-2 text-right font-bold ${m.type==='in'?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'}">${m.type==='in'?'+':'-'}${qtyDisplay}</td>
             <td class="p-2 text-right">
                     <button onclick="undoMovement('${m.id}')" class="text-red-400 hover:text-red-600 p-1" title="Отменить"><i class="fas fa-trash"></i></button>
             </td>
@@ -1041,7 +1063,7 @@ function renderHistoryTable() {
 function renderDatalists() { 
     const dl = document.getElementById('itemList'); 
     dl.innerHTML = ''; 
-    (db.items || []).forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${i.qty}</option>`); 
+    (db.items || []).forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${formatNumber(i.qty)}</option>`); 
 }
 
 // --- PROJECTS ---
@@ -1066,6 +1088,14 @@ function renderProjects() {
     sorted.sort((a, b) => {
         let va = a[key];
         let vb = b[key];
+        if (key === 'num') {
+            const na = parseFloat(va);
+            const nb = parseFloat(vb);
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+                va = na;
+                vb = nb;
+            }
+        }
         if (typeof va === 'string') va = va.toLowerCase();
         if (typeof vb === 'string') vb = vb.toLowerCase();
         
@@ -1078,12 +1108,23 @@ function renderProjects() {
         const isClosed = p.status === 'closed'; 
         const statusHtml = isClosed ? '<span class="px-2 py-1 rounded text-xs font-bold bg-slate-200 text-slate-500">Закрыт</span>' : '<span class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-800">В работе</span>'; 
         const actionBtn = isClosed ? `<button onclick="event.stopPropagation(); viewClosedProject(${p.id})" class="text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 z-10 relative"><i class="fas fa-eye"></i></button>` : `<button onclick="event.stopPropagation(); closeProject(${p.id})" class="text-red-400 hover:text-red-600 text-xs border border-red-200 dark:border-red-900 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900 z-10 relative">Закрыть</button>`; 
+        const projectYear = p.year || '—';
+        const projectNum = p.num || '—';
+        const projectClient = p.client || '—';
+        const projectCost = Number(p.cost) || 0;
+        const startDate = p.start || '—';
+        const endDate = p.end || '—';
+        const formattedProjectCost = formatNumber(projectCost);
         tbody.innerHTML += `<tr onclick="openProjectCard(${p.id})" class="border-b dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition h-16 ${isClosed ? 'opacity-60 bg-slate-50 dark:bg-slate-800' : ''}">
-            <td class="px-4 py-3">${p.year}</td>
-            <td class="px-4 py-3"><div class="font-bold">${p.num}</div><div class="text-xs text-slate-500 dark:text-slate-400">${p.client}</div></td>
-            <td class="px-4 py-3"><div class="font-bold text-blue-800 dark:text-blue-400 hover:underline">${p.name}</div><div class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">${p.desc || '-'}</div></td>
-            <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 hidden md:table-cell">${p.start} <br> ${p.end}</td>
-            <td class="px-4 py-3 text-right">${p.cost.toLocaleString()}</td>
+            <td class="px-4 py-3">${projectYear}</td>
+            <td class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">${projectNum}</td>
+            <td class="px-4 py-3 text-slate-600 dark:text-slate-300">${projectClient}</td>
+            <td class="px-4 py-3">
+                <div class="font-bold text-blue-800 dark:text-blue-400 hover:underline">${p.name}</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">${p.desc || '-'}</div>
+            </td>
+            <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 hidden md:table-cell">${startDate} <br> ${endDate}</td>
+            <td class="px-4 py-3 text-right">${formattedProjectCost}</td>
             <td class="px-4 py-3 text-center">${statusHtml}</td>
             <td class="px-4 py-3 text-right">${actionBtn}</td>
         </tr>`; 
@@ -1489,8 +1530,9 @@ function loadSpec(sid) {
         const rowTotal = cost * qty;
         tot += rowTotal; 
         const qtyCell = isDraft
-            ? `<input type="number" min="0" step="0.01" value="${qty}" class="spec-qty-input w-20 text-center border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="updateSpecItemQty(${originalIndex}, this.value)" onclick="event.stopPropagation()">`
-            : qty;
+            ? `<input type="number" min="0" step="0.01" value="${formatNumber(qty)}" class="spec-qty-input w-20 text-center border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="updateSpecItemQty(${originalIndex}, this.value)" onclick="event.stopPropagation()">`
+            : formatNumber(qty);
+        const rowTotalDisplay = formatCurrency(rowTotal);
 
         if (category !== currentCategory) {
             currentCategory = category;
@@ -1508,11 +1550,11 @@ function loadSpec(sid) {
             <td class="px-4 py-2 text-sm">${isCustom ? `<span class="font-medium">${name}</span>` : `<span class="text-blue-600 dark:text-blue-400 hover:underline">${name}</span>`}</td>
             <td class="text-center text-sm">${unit || '-'}</td>
             <td class="text-center text-sm">${qtyCell}</td>
-            <td class="text-right text-sm">${rowTotal.toLocaleString()}</td>
+            <td class="text-right text-sm">${rowTotalDisplay}</td>
             <td class="text-right">${del}</td>
         </tr>`; 
     });
-    const formattedTotal = `${tot.toLocaleString()} ₽`;
+    const formattedTotal = formatCurrency(tot);
     const totalEl = document.getElementById('specTotalCost');
     if (totalEl) {
         totalEl.textContent = formattedTotal;
@@ -1734,7 +1776,7 @@ function commitSpec() {
     loadSpec(selectedSpecId);
 }
 
-function printSpec() {
+function printSpec(includeCosts = true) {
     if(!selectedProjectId || !selectedSpecId) return;
     const project = db.projects.find(p => p.id === selectedProjectId);
     const spec = db.specs[selectedProjectId].find(s => s.id === selectedSpecId);
@@ -1779,26 +1821,41 @@ function printSpec() {
     let currentCategory = null;
     let total = 0;
     
+    const groupColSpan = includeCosts ? 6 : 4;
     itemsWithMeta.forEach((item, index) => {
         total += item.sum;
+        const qtyDisplay = formatNumber(item.qty);
+        const priceDisplay = formatNumber(item.cost);
+        const sumDisplay = formatNumber(item.sum);
+        const priceCell = includeCosts ? `<td class="p-2 text-right">${priceDisplay}</td>` : '';
+        const sumCell = includeCosts ? `<td class="p-2 text-right font-bold">${sumDisplay}</td>` : '';
         if(item.category !== currentCategory) {
             currentCategory = item.category;
             groupedRows += `<tr class="bg-slate-50">
-                <td colspan="6" class="p-2 text-xs font-bold uppercase tracking-widest">${currentCategory}</td>
+                <td colspan="${groupColSpan}" class="p-2 text-xs font-bold uppercase tracking-widest">${currentCategory}</td>
             </tr>`;
         }
         groupedRows += `<tr class="border-b">
             <td class="p-2 text-center">${index + 1}</td>
             <td class="p-2">${item.isCustom ? `${item.name} (нестандарт)` : item.name}</td>
             <td class="p-2 text-center">${item.unit || '-'}</td>
-            <td class="p-2 text-center">${item.qty}</td>
-            <td class="p-2 text-right">${item.cost.toLocaleString()}</td>
-            <td class="p-2 text-right font-bold">${item.sum.toLocaleString()}</td>
+            <td class="p-2 text-center">${qtyDisplay}</td>
+            ${priceCell}
+            ${sumCell}
         </tr>`;
     });
     
     const statusText = spec.status === 'committed' ? '<div class="font-bold text-lg mt-2">Статус: Списано</div>' : '';
     
+    const totalDisplay = includeCosts ? formatCurrency(total) : '';
+    const priceHeader = includeCosts ? '<th class="p-2 text-right w-24">Цена</th>' : '';
+    const sumHeader = includeCosts ? '<th class="p-2 text-right w-28">Сумма</th>' : '';
+    const totalBlock = includeCosts ? `
+            <div class="border-t-2 border-black pt-4 mb-8">
+                <div class="text-right">
+                    <div class="text-xl font-bold">ОБЩИЙ ИТОГО: ${totalDisplay}</div>
+                </div>
+            </div>` : '';
     const tableBlock = `
         <div class="mb-6">
             <h2 class="text-lg font-bold mb-3">Состав спецификации</h2>
@@ -1809,8 +1866,8 @@ function printSpec() {
                         <th class="p-2 text-left">Наименование</th>
                         <th class="p-2 text-center w-16">Ед.</th>
                         <th class="p-2 text-center w-20">Кол-во</th>
-                        <th class="p-2 text-right w-24">Цена</th>
-                        <th class="p-2 text-right w-28">Сумма</th>
+                        ${priceHeader}
+                        ${sumHeader}
                     </tr>
                 </thead>
                 <tbody>${groupedRows}</tbody>
@@ -1836,11 +1893,7 @@ function printSpec() {
                 </div>
             </div>
             ${tableBlock}
-            <div class="border-t-2 border-black pt-4 mb-8">
-                <div class="text-right">
-                    <div class="text-xl font-bold">ОБЩИЙ ИТОГО: ${total.toLocaleString()} ₽</div>
-                </div>
-            </div>
+            ${totalBlock}
             <div class="flex justify-between mt-12 text-sm">
                 <div>
                     <div class="border-t border-black w-48 pt-1">Сдал (Кладовщик)</div>
@@ -1860,26 +1913,26 @@ function printSpec() {
 function renderDashboard() {
     if(!db.items) return;
     let totalMoney = db.items.reduce((acc, i) => acc + (i.cost * i.qty), 0);
-    document.getElementById('dashTotalMoney').innerText = totalMoney.toLocaleString() + ' ₽';
+    document.getElementById('dashTotalMoney').innerText = formatCurrency(totalMoney);
     
     let activeProj = (db.projects || []).filter(p => p.status === 'active');
-    document.getElementById('dashActiveProj').innerText = activeProj.length;
+    document.getElementById('dashActiveProj').innerText = formatNumber(activeProj.length);
     
     let budget = activeProj.reduce((acc, p) => acc + (parseFloat(p.cost) || 0), 0);
     const budgetEl = document.getElementById('dashActiveBudget');
-    if(budgetEl) budgetEl.innerText = budget.toLocaleString();
+    if(budgetEl) budgetEl.innerText = formatCurrency(budget);
     
     const lowStockItems = (db.items || []).map(item => {
         const free = item.qty - getReserve(item.id);
         return {...item, free};
     }).filter(item => item.free < 0);
-    document.getElementById('dashLowStockCount').innerText = lowStockItems.length;
+    document.getElementById('dashLowStockCount').innerText = formatNumber(lowStockItems.length);
     
     const lsTable = document.getElementById('dashLowStockTable');
     lsTable.innerHTML = lowStockItems.slice(0, 5)
         .map(i => `<tr class="border-b dark:border-slate-700">
             <td class="py-2 font-medium text-slate-700 dark:text-slate-300">${i.name}</td>
-            <td class="py-2 text-right font-bold text-red-600 dark:text-red-400">${i.free} ${i.unit}</td>
+            <td class="py-2 text-right font-bold text-red-600 dark:text-red-400">${formatNumber(i.free)} ${i.unit}</td>
         </tr>`).join('') || '<tr><td colspan="2" class="py-4 text-center text-slate-400 text-sm">Все в порядке</td></tr>';
     
     const today = new Date();
@@ -1891,14 +1944,15 @@ function renderDashboard() {
         return diffDays <= 7; 
     }).sort((a, b) => new Date(a.end) - new Date(b.end));
 
-    document.getElementById('dashDeadlineCount').innerText = upcomingDeadlines.length;
+    document.getElementById('dashDeadlineCount').innerText = formatNumber(upcomingDeadlines.length);
 
     const dlTable = document.getElementById('dashDeadlineTable');
     dlTable.innerHTML = upcomingDeadlines.slice(0, 5).map(p => {
         const deadline = new Date(p.end);
         const diffTime = deadline - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const daysText = diffDays < 0 ? `Просрочен на ${Math.abs(diffDays)} дн.` : (diffDays === 0 ? 'Сегодня' : `${diffDays} дн.`);
+        const daysValue = formatNumber(Math.abs(diffDays));
+        const daysText = diffDays < 0 ? `Просрочен на ${daysValue} дн.` : (diffDays === 0 ? 'Сегодня' : `${daysValue} дн.`);
         const colorClass = diffDays < 0 ? 'text-red-600 dark:text-red-400' : 'text-orange-500 dark:text-orange-400';
         
         return `<tr class="border-b dark:border-slate-700"><td class="py-2 font-medium text-slate-700 dark:text-slate-300 text-sm truncate max-w-[150px]">${p.name}</td><td class="py-2 text-right font-bold ${colorClass} text-sm">${daysText}</td></tr>`;
@@ -1909,7 +1963,7 @@ function renderDashboard() {
             return `<tr class="border-b dark:border-slate-700">
             <td class="py-2 text-slate-500 dark:text-slate-400 text-xs">${m.date.split(',')[0]}</td>
             <td class="py-2 font-medium text-slate-700 dark:text-slate-300 text-sm truncate max-w-[150px]">${m.itemName}</td>
-            <td class="py-2 text-right font-bold ${m.type==='in'?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'} text-sm">${m.type==='in'?'+':'-'}${m.qty}</td>
+            <td class="py-2 text-right font-bold ${m.type==='in'?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'} text-sm">${m.type==='in'?'+':'-'}${formatNumber(m.qty)}</td>
                 <td class="py-2 text-right">
                     <button onclick="undoMovement('${m.id}')" class="text-red-400 hover:text-red-600 p-1" title="Отменить"><i class="fas fa-trash"></i></button>
             </td>
@@ -2510,16 +2564,17 @@ function openProjectCard(id) {
                 } 
             }); 
             totalProjectSum += specSum; 
+            const specSumDisplay = formatCurrency(specSum);
             const statusBadge = s.status === 'committed' ? '<span class="text-red-500 font-bold text-xs">Списана</span>' : '<span class="text-green-600 font-bold text-xs">В работе</span>'; 
             tbody.innerHTML += `<tr class="border-b dark:border-slate-700 last:border-0">
                 <td class="px-4 py-2 font-medium">${s.name}</td>
                 <td class="px-4 py-2 text-center">${statusBadge}</td>
                 <td class="px-4 py-2 text-center">${s.items.length}</td>
-                <td class="px-4 py-2 text-right">${specSum.toLocaleString()} ₽</td>
+                <td class="px-4 py-2 text-right">${specSumDisplay}</td>
             </tr>`; 
         }); 
     } 
-    document.getElementById('pcTotalSpecsCost').textContent = totalProjectSum.toLocaleString() + ' ₽'; 
+    document.getElementById('pcTotalSpecsCost').textContent = formatCurrency(totalProjectSum); 
     switchProjectTab('info'); 
     openModal('projectCardModal'); 
 }
