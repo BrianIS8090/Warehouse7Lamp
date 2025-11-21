@@ -39,7 +39,17 @@ if (auth) {
         if (user) { 
             const loginScreen = document.getElementById('loginScreen');
             const connectionStatus = document.getElementById('connectionStatus');
-            if (loginScreen) loginScreen.classList.add('hidden'); 
+            const userEmailText = document.getElementById('userEmailText');
+            
+            if (userEmailText) {
+                userEmailText.textContent = user.email || "User";
+                userEmailText.classList.remove('hidden');
+                console.log("User email set to:", user.email);
+            } else {
+                console.error("Element userEmailText not found!");
+            }
+            
+            if (loginScreen) loginScreen.classList.add('hidden');  
             if (connectionStatus) {
                 connectionStatus.innerText = "Online (Cloud)"; 
                 connectionStatus.classList.add("text-green-600"); 
@@ -110,6 +120,13 @@ function demoLogin() {
     isDemoMode = true; 
     const loginScreen = document.getElementById('loginScreen');
     const connectionStatus = document.getElementById('connectionStatus');
+    const userEmailText = document.getElementById('userEmailText');
+    
+    if (userEmailText) {
+        userEmailText.textContent = "Demo User";
+        userEmailText.classList.remove('hidden');
+    }
+
     if (loginScreen) loginScreen.classList.add('hidden'); 
     if (connectionStatus) {
         connectionStatus.innerText = "Demo (Local)"; 

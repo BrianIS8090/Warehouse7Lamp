@@ -26,6 +26,8 @@ try {
 // --- 2. APP VARIABLES & SORT STATE ---
 let db = { items: [], projects: [], specs: {}, movements: [] };
 let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null, hasUnsavedChanges = false;
+let selectedItems = new Set(); // Множество выбранных товаров для массового удаления
+let massSelectionEnabled = false;
 
 // Pagination Variables
 let currentPage = 1;
@@ -70,6 +72,26 @@ function toggleTheme() {
     }
 }
 
+function toggleMassSelectionSetting(checked) {
+    massSelectionEnabled = checked;
+    localStorage.setItem('settings_massSelection', checked);
+    
+    // Если выключили, очищаем выбор
+    if (!checked) {
+        selectedItems.clear();
+        updateDeleteButton();
+    }
+    
+    renderWarehouse();
+    
+    // Если открыта карточка товара, обновляем видимость кнопки удаления
+    const itemCardModal = document.getElementById('itemCardModal');
+    if (itemCardModal && !itemCardModal.classList.contains('hidden')) {
+        const viewOnly = itemCardModal.dataset.viewOnly === 'true';
+        setItemCardViewMode(viewOnly);
+    }
+}
+
 // Init Theme
 (function() {
     const saved = localStorage.getItem('theme');
@@ -108,6 +130,13 @@ if (auth) {
             document.getElementById('loginScreen').classList.add('hidden'); 
             document.getElementById('connectionStatus').innerText = "Online (Cloud)"; 
             document.getElementById('connectionStatus').classList.add("text-green-600"); 
+            
+            const userEmailText = document.getElementById('userEmailText');
+            if (userEmailText) {
+                userEmailText.textContent = user.email;
+                userEmailText.classList.remove('hidden');
+            }
+
             init(false); 
         } else { 
             if(!isDemoMode) { 
@@ -158,6 +187,13 @@ function demoLogin() {
     document.getElementById('loginScreen').classList.add('hidden'); 
     document.getElementById('connectionStatus').innerText = "Demo (Local)"; 
     document.getElementById('connectionStatus').classList.add("text-orange-500"); 
+    
+    const userEmailText = document.getElementById('userEmailText');
+    if (userEmailText) {
+        userEmailText.textContent = "Demo User";
+        userEmailText.classList.remove('hidden');
+    }
+
     showToast("Демо режим: данные не сохраняются в облако"); 
     seedData(); 
     init(true); 
@@ -217,6 +253,11 @@ async function init(force = false) {
         } else if (savedPerPage) {
             itemsPerPage = parseInt(savedPerPage) || 20;
         }
+        
+        // Восстанавливаем настройку массового выбора
+        const savedMassSel = localStorage.getItem('settings_massSelection');
+        massSelectionEnabled = savedMassSel === 'true';
+
         updatePaginationButtons();
         
         refreshAll(); 
@@ -240,6 +281,11 @@ async function init(force = false) {
         } else if (savedPerPage) {
             itemsPerPage = parseInt(savedPerPage) || 20;
         }
+
+        // Восстанавливаем настройку массового выбора
+        const savedMassSel = localStorage.getItem('settings_massSelection');
+        massSelectionEnabled = savedMassSel === 'true';
+
         updatePaginationButtons();
         
         refreshAll(); 
@@ -378,15 +424,63 @@ function getReserve(itemId) {
 
 function renderCategoryList() { 
     if (!db || !db.items) return; 
-    const cats = [...new Set(db.items.map(i => i.cat))].sort(); 
+    
+    const items = db.items; 
     const list = document.getElementById('categoryList'); 
-    list.innerHTML = ''; 
-    const allClass = currentFilterCat === 'all' ? 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600 dark:bg-slate-700 dark:text-blue-400 dark:border-blue-400' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-blue-400'; 
-    list.innerHTML += `<div onclick="filterCat('all')" class="p-2 rounded cursor-pointer transition mb-1 text-sm ${allClass}">Все категории</div>`; 
-    cats.forEach(c => { 
-        const activeClass = currentFilterCat === c ? 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600 dark:bg-slate-700 dark:text-blue-400 dark:border-blue-400' : 'text-slate-600 hover:bg-slate-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-blue-400'; 
-        list.innerHTML += `<div onclick="filterCat('${c}')" class="p-2 rounded cursor-pointer transition mb-1 text-sm ${activeClass}">${c}</div>`; 
+    if (!list) return;
+
+    const totalUnique = items.length;
+    const totalUnits = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+    
+    const cats = [...new Set(items.map(i => i.cat))].sort((a, b) => {
+        const labelA = (a || '').toLowerCase();
+        const labelB = (b || '').toLowerCase();
+        return labelA.localeCompare(labelB, 'ru');
     }); 
+
+    const catCounts = items.reduce((acc, item) => {
+        const key = item.cat;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+    }, {});
+
+    const baseClass = 'p-2 rounded cursor-pointer transition mb-1 text-sm flex items-center justify-between gap-2';
+    const activeClass = 'bg-blue-100 text-blue-700 font-bold shadow-sm border-l-4 border-blue-600 dark:bg-slate-700 dark:text-blue-400 dark:border-blue-400';
+    const inactiveClass = 'text-slate-600 hover:bg-slate-50 hover:text-blue-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-blue-400';
+    const badgeClass = isActive => isActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-300';
+
+    let html = `
+        <div class="p-3 mb-2 rounded-lg bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600">
+            <div class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-300 tracking-wide">Уникальных товаров</div>
+            <div class="text-2xl font-extrabold text-slate-800 dark:text-white">${totalUnique.toLocaleString('ru-RU')}</div>
+            <div class="text-[11px] text-slate-500 dark:text-slate-300 mt-1">Суммарный остаток: ${totalUnits.toLocaleString('ru-RU')}</div>
+        </div>
+    `;
+
+    const allActive = currentFilterCat === 'all';
+    html += `
+        <div onclick="filterCat('all')" class="${baseClass} ${allActive ? activeClass : inactiveClass}">
+            <span>Все категории</span>
+            <span class="text-[11px] font-semibold ${badgeClass(allActive)}">${totalUnique.toLocaleString('ru-RU')}</span>
+        </div>
+    `;
+
+    cats.forEach(c => { 
+        const isActive = currentFilterCat === c;
+        const displayName = c || 'Без категории';
+        const count = catCounts[c] || 0;
+        const handler = c === undefined ? 'filterCat()' : `filterCat(${JSON.stringify(c)})`;
+
+        html += `
+            <div onclick='${handler}' class="${baseClass} ${isActive ? activeClass : inactiveClass}">
+                <span class="truncate">${displayName}</span>
+                <span class="text-[11px] font-semibold ${badgeClass(isActive)}">${count.toLocaleString('ru-RU')}</span>
+            </div>
+        `;
+    }); 
+
+    list.innerHTML = html;
+
     const dl = document.getElementById('catDataList'); 
     if (dl) { 
         dl.innerHTML = ''; 
@@ -397,6 +491,7 @@ function renderCategoryList() {
 function filterCat(cat) { 
     currentFilterCat = cat; 
     currentPage = 1; // Сбрасываем на первую страницу при смене категории
+    selectedItems.clear(); // Сбрасываем выбор при смене категории
     renderCategoryList(); 
     renderWarehouse(); 
 }
@@ -414,6 +509,7 @@ function setWarehouseSort(key) {
 // Debounced version of renderWarehouse for search input
 const debouncedRenderWarehouse = debounce(() => {
     currentPage = 1; // Сбрасываем на первую страницу при поиске
+    // Не сбрасываем выбор при поиске, чтобы пользователь мог выбрать товары на разных страницах
     renderWarehouse();
 }, 300);
 
@@ -474,6 +570,16 @@ function renderWarehouse() {
     const tbody = document.getElementById('warehouseTableBody'); 
     const q = document.getElementById('warehouseSearch').value.toLowerCase().trim(); 
     const items = db.items || []; 
+    
+    // Handle header visibility
+    const headerCheckbox = document.getElementById('selectAllItems');
+    if(headerCheckbox && headerCheckbox.parentElement) {
+         if(massSelectionEnabled) {
+             headerCheckbox.parentElement.classList.remove('hidden');
+         } else {
+             headerCheckbox.parentElement.classList.add('hidden');
+         }
+    }
     
     // Pre-filter items (more efficient than chaining)
     let filtered = [];
@@ -543,7 +649,7 @@ function renderWarehouse() {
     
     if (filtered.length === 0) {
         const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = '<td colspan="9" class="p-8 text-center text-slate-400">Ничего не найдено</td>';
+        emptyRow.innerHTML = '<td colspan="10" class="p-8 text-center text-slate-400">Ничего не найдено</td>';
         fragment.appendChild(emptyRow);
     } else {
         // Pre-calculate reserves for all items at once (cache optimization)
@@ -572,7 +678,19 @@ function renderWarehouse() {
             const img = item.img ? `<img src="${item.img}" class="w-10 h-10 object-cover rounded border border-slate-300 mx-auto" alt="фото" onerror="this.src='https://placehold.co/40'">` : '<span class="text-slate-300">-</span>';
             const fileIcon = item.file ? `<a href="${item.file}" target="_blank" onclick="event.stopPropagation()" class="ml-2 text-slate-400 hover:text-blue-600" title="Скачать файл"><i class="fas fa-file-alt"></i></a>` : '';
             
+            const isSelected = selectedItems.has(item.id);
+            
+            const checkboxCell = massSelectionEnabled ? `
+                <td class="px-2 py-3 text-center" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer" 
+                           data-item-id="${item.id}" 
+                           ${isSelected ? 'checked' : ''} 
+                           onchange="toggleItemSelection(${item.id}, this.checked)">
+                </td>
+            ` : `<td class="hidden"></td>`;
+            
             row.innerHTML = `
+                ${checkboxCell}
                 <td class="px-2 py-3 text-center">
                     <div class="flex gap-1 justify-center">
                         <button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
@@ -608,6 +726,196 @@ function renderWarehouse() {
     
     // Обновляем кнопки пагинации (на случай, если они еще не инициализированы)
     updatePaginationButtons();
+    
+    // Обновляем состояние кнопки удаления и счетчика выбранных
+    updateDeleteButton();
+    updateSelectAllCheckbox();
+}
+
+// --- MASS DELETE FUNCTIONS ---
+function toggleItemSelection(itemId, checked) {
+    if (checked) {
+        selectedItems.add(itemId);
+    } else {
+        selectedItems.delete(itemId);
+    }
+    updateDeleteButton();
+    updateSelectAllCheckbox();
+}
+
+function toggleSelectAll() {
+    const checkbox = document.getElementById('selectAllItems');
+    if (!checkbox) return;
+    
+    const q = document.getElementById('warehouseSearch').value.toLowerCase().trim();
+    const items = db.items || [];
+    
+    // Получаем отфильтрованный список товаров
+    let filtered = [];
+    const isAllCats = currentFilterCat === 'all';
+    const hasSearch = q.length > 0;
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!isAllCats && item.cat !== currentFilterCat) continue;
+        if (hasSearch && !item.name.toLowerCase().includes(q) && !item.manuf.toLowerCase().includes(q)) continue;
+        filtered.push(item);
+    }
+    
+    // Определяем диапазон товаров для текущей страницы
+    let startIndex = 0;
+    let endIndex = filtered.length;
+    
+    if (itemsPerPage !== null) {
+        startIndex = (currentPage - 1) * itemsPerPage;
+        endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
+    }
+    
+    // Получаем товары на текущей странице
+    const pageItems = filtered.slice(startIndex, endIndex);
+    
+    if (checkbox.checked) {
+        // Выбираем все товары на текущей странице
+        pageItems.forEach(item => selectedItems.add(item.id));
+    } else {
+        // Снимаем выбор со всех товаров на текущей странице
+        pageItems.forEach(item => selectedItems.delete(item.id));
+    }
+    
+    // Обновляем чекбоксы в таблице
+    pageItems.forEach(item => {
+        const itemCheckbox = document.querySelector(`.item-checkbox[data-item-id="${item.id}"]`);
+        if (itemCheckbox) {
+            itemCheckbox.checked = checkbox.checked;
+        }
+    });
+    
+    updateDeleteButton();
+}
+
+function updateSelectAllCheckbox() {
+    const checkbox = document.getElementById('selectAllItems');
+    if (!checkbox) return;
+    
+    const q = document.getElementById('warehouseSearch').value.toLowerCase().trim();
+    const items = db.items || [];
+    
+    // Получаем отфильтрованный список товаров
+    let filtered = [];
+    const isAllCats = currentFilterCat === 'all';
+    const hasSearch = q.length > 0;
+    
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!isAllCats && item.cat !== currentFilterCat) continue;
+        if (hasSearch && !item.name.toLowerCase().includes(q) && !item.manuf.toLowerCase().includes(q)) continue;
+        filtered.push(item);
+    }
+    
+    // Определяем диапазон товаров для текущей страницы
+    let startIndex = 0;
+    let endIndex = filtered.length;
+    
+    if (itemsPerPage !== null) {
+        startIndex = (currentPage - 1) * itemsPerPage;
+        endIndex = Math.min(startIndex + itemsPerPage, filtered.length);
+    }
+    
+    // Получаем товары на текущей странице
+    const pageItems = filtered.slice(startIndex, endIndex);
+    
+    // Проверяем, все ли товары на странице выбраны
+    const allSelected = pageItems.length > 0 && pageItems.every(item => selectedItems.has(item.id));
+    const someSelected = pageItems.some(item => selectedItems.has(item.id));
+    
+    checkbox.checked = allSelected;
+    checkbox.indeterminate = someSelected && !allSelected;
+}
+
+function updateDeleteButton() {
+    const btn = document.getElementById('btnDeleteSelected');
+    const countEl = document.getElementById('selectedCount');
+    
+    if (!btn || !countEl) return;
+    
+    const count = selectedItems.size;
+    
+    if (count > 0) {
+        btn.classList.remove('hidden');
+        countEl.textContent = count;
+    } else {
+        btn.classList.add('hidden');
+    }
+}
+
+function deleteSelectedItems() {
+    if (selectedItems.size === 0) {
+        showToast('Не выбрано ни одного товара');
+        return;
+    }
+    
+    const count = selectedItems.size;
+    const itemNames = Array.from(selectedItems)
+        .map(id => {
+            const item = db.items.find(i => i.id === id);
+            return item ? item.name : '';
+        })
+        .filter(name => name)
+        .slice(0, 5)
+        .join(', ');
+    
+    const moreText = count > 5 ? ` и еще ${count - 5}...` : '';
+    const message = `Вы уверены, что хотите удалить ${count} товар(ов)?\n\n${itemNames}${moreText}\n\nЭто действие нельзя отменить.`;
+    
+    if (!confirm(message)) return;
+    
+    // Проверяем использование товаров в активных проектах
+    let itemsInUse = [];
+    Array.from(selectedItems).forEach(itemId => {
+        const item = db.items.find(i => i.id === itemId);
+        if (!item) return;
+        
+        (db.projects || []).forEach(p => {
+            if (p.status === 'active') {
+                ((db.specs || {})[p.id] || []).forEach(s => {
+                    if (s.status === 'draft') {
+                        if (s.items.find(i => i.itemId == item.id)) {
+                            itemsInUse.push(item.name);
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    if (itemsInUse.length > 0) {
+        const uniqueItems = [...new Set(itemsInUse)];
+        const warning = `Внимание! Некоторые товары используются в активных спецификациях:\n${uniqueItems.slice(0, 5).join(', ')}${uniqueItems.length > 5 ? '...' : ''}\n\nУдаление может привести к ошибкам в проектах.\n\nВсе равно удалить?`;
+        if (!confirm(warning)) return;
+    }
+    
+    // Удаляем товары
+    let deletedCount = 0;
+    Array.from(selectedItems).forEach(itemId => {
+        const idx = db.items.findIndex(i => i.id === itemId);
+        if (idx > -1) {
+            db.items.splice(idx, 1);
+            deletedCount++;
+        }
+    });
+    
+    // Очищаем выбор
+    selectedItems.clear();
+    
+    // Сохраняем изменения
+    save();
+    
+    // Обновляем интерфейс
+    refreshAll();
+    updateDeleteButton();
+    updateSelectAllCheckbox();
+    
+    showToast(`Удалено товаров: ${deletedCount}`);
 }
 
 // --- QUICK MOVE LOGIC ---
@@ -2011,7 +2319,8 @@ function setItemCardViewMode(viewOnly) {
         saveBtn.style.display = viewOnly ? 'none' : '';
     }
     if (deleteBtn) {
-        deleteBtn.style.display = viewOnly ? 'none' : '';
+        // Кнопка удаления скрывается если включен режим просмотра ИЛИ отключена настройка удаления
+        deleteBtn.style.display = (viewOnly || !massSelectionEnabled) ? 'none' : '';
     }
     
     // Сохраняем режим просмотра в data-атрибуте модального окна
@@ -2034,6 +2343,10 @@ function updateCardPreview() {
 }
 
 function deleteItemFromCard() {
+    if (!massSelectionEnabled) {
+        return showToast("Удаление отключено в настройках");
+    }
+
     const idVal = document.getElementById('cardId').value;
     // ID can be int (old data) or string (imported data potentially, though we convert to int/date in import).
     // Let's handle both, `cardId` value is string from input.
@@ -2062,6 +2375,8 @@ function deleteItemFromCard() {
     const idx = db.items.indexOf(item);
     if (idx > -1) {
         db.items.splice(idx, 1);
+        // Удаляем товар из выбранных, если он был выбран
+        selectedItems.delete(item.id);
         save();
         closeModal('itemCardModal');
         refreshAll();
@@ -2139,7 +2454,19 @@ function closeModal(id) {
         }
     }
 }
-function openSettings() { openModal('settingsModal'); }
+function openSettings() { 
+    const user = auth ? auth.currentUser : null;
+    if (!user || user.email !== 'is8090@mail.ru') {
+        alert("Доступ к настройкам разрешен только для администратора (is8090@mail.ru)");
+        return;
+    }
+
+    const checkbox = document.getElementById('settingMassSelect');
+    if (checkbox) {
+        checkbox.checked = massSelectionEnabled;
+    }
+    openModal('settingsModal'); 
+}
 
 function openProjectCard(id) { 
     const p = db.projects.find(x => x.id === id); 

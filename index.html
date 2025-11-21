@@ -57,10 +57,15 @@
         <div class="max-w-full mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center gap-2 font-bold text-xl text-slate-800 dark:text-white">
-                    <i class="fas fa-cloud text-blue-600"></i> Склад Online <span class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500 dark:text-slate-300 ml-2" id="connectionStatus">Offline</span>
+                    <i class="fas fa-cloud text-blue-600"></i> 
+                    <span>Склад Online</span>
+                    <div class="flex flex-col items-start ml-2">
+                        <span class="text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded text-slate-500 dark:text-slate-300" id="connectionStatus">Offline</span>
+                        <span id="userEmailText" class="text-[10px] text-slate-400 dark:text-slate-500 font-normal px-1 truncate max-w-[150px] hidden"></span>
+                    </div>
                 </div>
                 <nav class="flex space-x-8 h-full hidden md:flex">
-                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn h-full px-1 flex items-center font-medium transition"><i class="fas fa-chart-pie mr-2"></i>Дашборд</button>
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn h-full px-1 flex items-center font-medium transition">Дашборд</button>
                     <button onclick="switchTab('warehouse')" id="tab-warehouse" class="tab-btn active h-full px-1 flex items-center font-medium transition">Склад</button>
                     <button onclick="switchTab('movements')" id="tab-movements" class="tab-btn h-full px-1 flex items-center font-medium transition">Приход/Уход</button>
                     <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn h-full px-1 flex items-center font-medium transition">Проекты</button>
@@ -79,7 +84,7 @@
                         <i id="themeIcon" class="fas fa-moon"></i>
                     </button>
                     <button onclick="init()" class="text-xs text-blue-500 hover:underline mr-2 hidden md:inline"><i class="fas fa-sync"></i> Обновить</button>
-					<button onclick="logout()" class="text-slate-400 hover:text-red-600 text-xs flex items-center gap-1 ml-4"><i class="fas fa-sign-out-alt"></i> Выйти</button>
+					<button onclick="logout()" class="text-slate-400 hover:text-red-600 text-xs flex items-center gap-1 ml-2"><i class="fas fa-sign-out-alt"></i> Выйти</button>
                 </div>
             </div>
         </div>
@@ -140,12 +145,18 @@
                             <input type="search" id="warehouseSearch" oninput="debouncedRenderWarehouse()" placeholder="Поиск..." class="w-full pl-8 pr-4 py-2 border dark:border-slate-600 rounded-full text-sm focus:outline-none focus:border-blue-500 bg-white dark:bg-slate-700 dark:text-white">
                         </div>
                     </div>
-                    <button onclick="openCreateItemModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Товар</button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="deleteSelectedItems()" id="btnDeleteSelected" class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 whitespace-nowrap hidden" title="Удалить выбранные"><i class="fas fa-trash mr-2"></i><span id="selectedCount">0</span></button>
+                        <button onclick="openCreateItemModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Товар</button>
+                    </div>
                 </div>
                 <div class="overflow-auto flex-1 p-0">
                     <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300">
                         <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-700 sticky top-0 z-10">
                             <tr>
+                                <th class="px-2 py-3 w-12 text-center bg-slate-100 dark:bg-slate-700 border-r dark:border-slate-600">
+                                    <input type="checkbox" id="selectAllItems" onchange="toggleSelectAll()" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer" title="Выбрать все">
+                                </th>
                                 <th class="px-2 py-3 w-16 text-center bg-slate-100 dark:bg-slate-700 border-r dark:border-slate-600">Дейст.</th>
                                 <th class="px-4 py-3">Фото</th>
                                 <th class="px-4 py-3 sortable-header" onclick="setWarehouseSort('name')">Наименование <i class="fas fa-sort sort-icon"></i></th>
@@ -290,6 +301,15 @@
         <div class="bg-white dark:bg-slate-800 p-6 rounded-lg w-full max-w-sm shadow-2xl transition-colors">
             <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Настройки</h3>
             <div class="space-y-3">
+                <!-- Settings Toggles -->
+                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border dark:border-slate-600">
+                    <div class="text-sm font-medium text-slate-700 dark:text-slate-200">Массовый выбор (удаление)</div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="settingMassSelect" class="sr-only peer" onchange="toggleMassSelectionSetting(this.checked)">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
                 <button onclick="exportData()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
                     <i class="fas fa-download"></i> Скачать базу (Backup)
                 </button>
