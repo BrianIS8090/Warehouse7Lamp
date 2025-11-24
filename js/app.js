@@ -28,6 +28,7 @@ let db = { items: [], projects: [], specs: {}, movements: [] };
 let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null, hasUnsavedChanges = false;
 let selectedItems = new Set(); // Множество выбранных товаров для массового удаления
 let massSelectionEnabled = false;
+let deleteProjectsEnabled = false;
 
 // Pagination Variables
 let currentPage = 1;
@@ -89,6 +90,20 @@ function toggleMassSelectionSetting(checked) {
     if (itemCardModal && !itemCardModal.classList.contains('hidden')) {
         const viewOnly = itemCardModal.dataset.viewOnly === 'true';
         setItemCardViewMode(viewOnly);
+    }
+}
+
+function toggleDeleteProjectsSetting(checked) {
+    deleteProjectsEnabled = checked;
+    localStorage.setItem('settings_deleteProjects', checked);
+    
+    // Если открыта карточка проекта, обновляем видимость кнопки удаления
+    const projectCardModal = document.getElementById('projectCardModal');
+    if (projectCardModal && !projectCardModal.classList.contains('hidden')) {
+        const deleteBtn = document.getElementById('btnDeleteProject');
+        if (deleteBtn) {
+            deleteBtn.classList.toggle('hidden', !checked);
+        }
     }
 }
 
@@ -257,6 +272,10 @@ async function init(force = false) {
         // Восстанавливаем настройку массового выбора
         const savedMassSel = localStorage.getItem('settings_massSelection');
         massSelectionEnabled = savedMassSel === 'true';
+        
+        // Восстанавливаем настройку удаления проектов
+        const savedDeleteProjects = localStorage.getItem('settings_deleteProjects');
+        deleteProjectsEnabled = savedDeleteProjects === 'true';
 
         updatePaginationButtons();
         
@@ -285,6 +304,10 @@ async function init(force = false) {
         // Восстанавливаем настройку массового выбора
         const savedMassSel = localStorage.getItem('settings_massSelection');
         massSelectionEnabled = savedMassSel === 'true';
+        
+        // Восстанавливаем настройку удаления проектов
+        const savedDeleteProjects = localStorage.getItem('settings_deleteProjects');
+        deleteProjectsEnabled = savedDeleteProjects === 'true';
 
         updatePaginationButtons();
         
@@ -2827,6 +2850,12 @@ function openSettings() {
     if (checkbox) {
         checkbox.checked = massSelectionEnabled;
     }
+    
+    const deleteProjectsCheckbox = document.getElementById('settingDeleteProjects');
+    if (deleteProjectsCheckbox) {
+        deleteProjectsCheckbox.checked = deleteProjectsEnabled;
+    }
+    
     openModal('settingsModal'); 
 }
 
@@ -2883,6 +2912,13 @@ function openProjectCard(id) {
         }); 
     } 
     document.getElementById('pcTotalSpecsCost').textContent = formatCurrency(totalProjectSum); 
+    
+    // Показываем/скрываем кнопку удаления в зависимости от настройки
+    const deleteBtn = document.getElementById('btnDeleteProject');
+    if (deleteBtn) {
+        deleteBtn.classList.toggle('hidden', !deleteProjectsEnabled);
+    }
+    
     switchProjectTab('info'); 
     openModal('projectCardModal'); 
 }
@@ -2904,6 +2940,59 @@ function saveProjectFromCard() {
         closeModal('projectCardModal'); 
         showToast('Проект обновлен'); 
     } 
+}
+
+function deleteProjectFromCard() {
+    if (!deleteProjectsEnabled) {
+        return showToast("Удаление проектов отключено в настройках");
+    }
+
+    const id = parseInt(document.getElementById('pcId').value);
+    const p = db.projects.find(x => x.id === id);
+    if(!p) return;
+
+    const projectName = p.name || `Проект #${p.id}`;
+    const specs = (db.specs || {})[p.id] || [];
+    const hasCommittedSpecs = specs.some(s => s.status === 'committed');
+    
+    let message = `Вы точно хотите удалить проект "${projectName}"?`;
+    if (specs.length > 0) {
+        message += `\n\nВ проекте ${specs.length} спецификаций.`;
+        if (hasCommittedSpecs) {
+            message += `\nВнимание! Есть списанные спецификации. Удаление приведет к потере истории.`;
+        }
+    }
+    message += `\n\nЭто действие нельзя отменить.`;
+
+    if(!confirm(message)) return;
+
+    // Удаляем проект из массива
+    const projectIndex = db.projects.findIndex(x => x.id === id);
+    if(projectIndex !== -1) {
+        db.projects.splice(projectIndex, 1);
+    }
+
+    // Удаляем спецификации проекта
+    if(db.specs && db.specs[p.id]) {
+        delete db.specs[p.id];
+    }
+
+    // Если это был выбранный проект, сбрасываем выбор
+    if(selectedProjectId === id) {
+        selectedProjectId = null;
+        selectedSpecId = null;
+    }
+
+    save();
+    renderProjects();
+    closeModal('projectCardModal');
+    
+    // Обновляем спецификации если открыта вкладка спецификаций
+    if(typeof renderSpecProjectList === 'function') {
+        renderSpecProjectList();
+    }
+    
+    showToast('Проект удален');
 }
 
 function switchProjectTab(tab) { 
