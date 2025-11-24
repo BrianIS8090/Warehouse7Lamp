@@ -2051,6 +2051,7 @@ function importLegacyCSV(input) {
                 // Generate a numeric ID to be compatible with new system, 
                 // but we can store the old ID in a hidden field if needed. 
                 // Using Date.now() + loop index to ensure uniqueness during fast import
+                const cost = parseFloat(costStr) || 0;
                 const newItem = {
                     id: Date.now() + i, 
                     name: row[1] || 'Без названия',
@@ -2058,11 +2059,16 @@ function importLegacyCSV(input) {
                     cat: row[3] || 'Разное',
                     qty: parseFloat(qtyStr) || 0,
                     unit: row[5] || 'шт.',
-                    cost: parseFloat(costStr) || 0,
+                    cost: cost,
                     chars: row[10] || '',
                     img: imgPath, 
                     file: row[14] || ''
                 };
+                
+                // Устанавливаем дату последнего изменения цены при импорте, если цена больше 0
+                if (cost > 0) {
+                    newItem.lastPriceChangeDate = new Date().toISOString();
+                }
 
                 db.items.push(newItem);
                 
@@ -2234,6 +2240,7 @@ function duplicateProject(pid) {
 function openCreateItemModal() { document.getElementById('newItemName').value=''; document.getElementById('createItemModal').classList.remove('hidden'); }
 
 function createNewItem() { 
+    const cost = parseFloat(document.getElementById('newItemCost').value) || 0;
     const i = { 
         id:Date.now(), 
         name:document.getElementById('newItemName').value, 
@@ -2241,11 +2248,16 @@ function createNewItem() {
         cat:document.getElementById('newItemCat').value||'Разное', 
         qty:parseFloat(document.getElementById('newItemQty').value)||0, 
         unit:document.getElementById('newItemUnit').value, 
-        cost:parseFloat(document.getElementById('newItemCost').value)||0, 
+        cost: cost,
         chars:document.getElementById('newItemChars').value, 
         img:document.getElementById('newItemImg').value, 
         file:document.getElementById('newItemFile').value 
-    }; 
+    };
+    
+    // Устанавливаем дату последнего изменения цены при создании товара с ценой
+    if (cost > 0) {
+        i.lastPriceChangeDate = new Date().toISOString();
+    } 
     
     if(!i.name)return; 
     db.items.push(i); 
@@ -2301,7 +2313,20 @@ function openItemCard(id, viewOnly = false) {
     document.getElementById('cardCost').value = i.cost; 
     document.getElementById('cardChars').value = i.chars; 
     document.getElementById('cardImg').value = i.img || ''; 
-    document.getElementById('cardFile').value = i.file || ''; 
+    document.getElementById('cardFile').value = i.file || '';
+    
+    // Отображаем дату последнего изменения цены
+    const priceDateEl = document.getElementById('cardPriceChangeDate');
+    if (priceDateEl) {
+        if (i.lastPriceChangeDate) {
+            const date = new Date(i.lastPriceChangeDate);
+            priceDateEl.textContent = `Изменена: ${date.toLocaleDateString('ru-RU')}`;
+            priceDateEl.title = `Дата изменения цены: ${date.toLocaleString('ru-RU')}`;
+        } else {
+            priceDateEl.textContent = '';
+            priceDateEl.title = '';
+        }
+    } 
     
     // Устанавливаем режим просмотра
     setItemCardViewMode(viewOnly);
@@ -2453,12 +2478,23 @@ function saveItemFromCard() {
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Сохранение...';
     }
     
+    // Проверяем, изменилась ли цена
+    const newCost = parseFloat(document.getElementById('cardCost').value) || 0;
+    const oldCost = i.cost || 0;
+    const priceChanged = Math.abs(newCost - oldCost) > 0.01; // Учитываем возможные ошибки округления
+    
     // Update item data
     i.name = document.getElementById('cardName').value; 
     i.manuf = document.getElementById('cardManuf').value; 
     i.cat = document.getElementById('cardCat').value; 
     i.unit = document.getElementById('cardUnit').value; 
-    i.cost = parseFloat(document.getElementById('cardCost').value) || 0; 
+    i.cost = newCost;
+    
+    // Обновляем дату последнего изменения цены, если цена изменилась
+    if (priceChanged) {
+        i.lastPriceChangeDate = new Date().toISOString();
+    }
+    
     i.chars = document.getElementById('cardChars').value; 
     i.img = document.getElementById('cardImg').value; 
     i.file = document.getElementById('cardFile').value; 
