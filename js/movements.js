@@ -251,3 +251,4 @@ function renderDatalists() {
     (db.items || []).forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${formatNumber(i.qty)}</option>`); 
 }
 
+

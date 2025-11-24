@@ -80,7 +80,7 @@ function renderProjectSpecs(projectId, specs) {
             : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:shadow';
         
         html += `
-            <div onclick="loadSpec('${s.id}')" class="p-2 border rounded cursor-pointer transition-colors ${specClasses}">
+            <div onclick="selectSpecAndLoad('${projectId}', '${s.id}')" class="p-2 border rounded cursor-pointer transition-colors ${specClasses}">
                 <div class="flex justify-between items-center gap-2">
                     <div class="flex items-center gap-2 flex-1 min-w-0">
                         ${ic}
@@ -120,6 +120,23 @@ function selectSpecProject(pid) {
     renderSpecProjectList(); 
     document.getElementById('specEditor').classList.add('hidden'); 
     document.getElementById('specContentPlaceholder').classList.remove('hidden'); 
+}
+
+function selectSpecAndLoad(projectId, specId) {
+    // Сначала выбираем проект
+    selectedProjectId = parseInt(projectId);
+    selectedSpecId = specId;
+    
+    // Автоматически раскрываем проект при выборе спецификации
+    if (!expandedProjects.has(selectedProjectId)) {
+        expandedProjects.add(selectedProjectId);
+    }
+    
+    // Обновляем дерево проектов, чтобы визуально выделить выбранный проект
+    renderSpecProjectList();
+    
+    // Затем загружаем спецификацию
+    loadSpec(specId);
 }
 
 function addNewSpecToProject() { 
@@ -312,7 +329,7 @@ function deleteSpec(specId) {
 // --- CUSTOM ITEMS ---
 function openAddCustomItemModal() {
     document.getElementById('customName').value = '';
-    document.getElementById('customUnit').value = '';
+    document.getElementById('customUnit').value = 'шт.';
     document.getElementById('customQty').value = '1';
     document.getElementById('customCost').value = '0';
     openModal('addCustomItemModal');
@@ -434,9 +451,23 @@ function loadSpec(sid) {
         })
         .filter(Boolean)
         .sort((a, b) => {
+            // Случай 1: Нестандартные изделия всегда внизу (если один нестандартный, а другой нет)
+            if (a.category === 'Нестандартные изделия' && b.category !== 'Нестандартные изделия') return 1;
+            if (b.category === 'Нестандартные изделия' && a.category !== 'Нестандартные изделия') return -1;
+            
+            // Случай 2: Если обе категории "Нестандартные изделия", сортируем по алфавиту по названию
+            if (a.category === 'Нестандартные изделия' && b.category === 'Нестандартные изделия') {
+                const nameA = (a.name || '').trim();
+                const nameB = (b.name || '').trim();
+                return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
+            }
+            
+            // Случай 3: Обычные товары - сортируем по категории, затем по названию
             const catDiff = a.category.localeCompare(b.category, 'ru', { sensitivity: 'base' });
             if (catDiff !== 0) return catDiff;
-            return a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' });
+            const nameA = (a.name || '').trim();
+            const nameB = (b.name || '').trim();
+            return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
         });
 
     let currentCategory = null;
@@ -469,13 +500,21 @@ function loadSpec(sid) {
         const itemNameClass = itemId ? 'text-blue-600 dark:text-blue-400 hover:underline cursor-pointer' : 'font-medium';
         // Отображаем общее количество (с учетом множителя спецификации)
         const totalQtyDisplay = formatNumber(finalQty);
+        
+        // Для нестандартных изделий добавляем возможность редактирования стоимости
+        const costCell = isCustom && isDraft
+            ? `<input type="number" min="0" step="0.01" value="${formatNumber(cost)}" class="spec-cost-input w-24 text-right border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="updateSpecItemCost(${originalIndex}, this.value)" onclick="event.stopPropagation()" title="Цена за единицу">`
+            : rowTotalDisplay;
+        
+        const costCellClass = isCustom && isDraft ? 'text-right' : 'text-right text-sm';
+        
         tb.innerHTML += `<tr class="border-b dark:border-slate-700 ${rowClass}">
             <td class="text-center text-sm px-2">${idx + 1}</td>
             <td class="px-4 py-2 text-sm">${isCustom ? `<span class="font-medium">${name}</span>` : `<span class="${itemNameClass}" ${itemNameClickHandler}>${name}</span>`}</td>
             <td class="text-center text-sm">${unit || '-'}</td>
             <td class="text-center text-sm">${qtyCell}</td>
             <td class="text-center text-sm font-medium text-blue-600 dark:text-blue-400">${totalQtyDisplay}</td>
-            <td class="text-right text-sm">${rowTotalDisplay}</td>
+            <td class="${costCellClass}">${costCell}</td>
             <td class="text-right">${del}</td>
         </tr>`; 
     });
@@ -669,6 +708,33 @@ function updateSpecItemQty(idx, rawValue) {
     loadSpec(selectedSpecId);
 }
 
+function updateSpecItemCost(idx, rawValue) {
+    if(!selectedProjectId || !selectedSpecId) return;
+    const cost = parseFloat(rawValue);
+    if(isNaN(cost)) {
+        showToast("Введите корректную стоимость");
+        loadSpec(selectedSpecId);
+        return;
+    }
+    if(cost < 0) {
+        showToast("Стоимость не может быть отрицательной");
+        loadSpec(selectedSpecId);
+        return;
+    }
+    const specList = (db.specs || {})[selectedProjectId] || [];
+    const spec = specList.find(x => x.id === selectedSpecId);
+    if(!spec || !spec.items[idx]) return;
+    
+    // Обновляем стоимость только для нестандартных изделий
+    if(spec.items[idx].isCustom) {
+        spec.items[idx].cost = cost;
+        save();
+        loadSpec(selectedSpecId);
+    } else {
+        showToast("Редактирование стоимости доступно только для нестандартных изделий");
+    }
+}
+
 function commitSpec() {
     if(!confirm("Списать материалы со склада? Это действие необратимо.")) return;
     const s = db.specs[selectedProjectId].find(x => x.id === selectedSpecId);
@@ -758,9 +824,23 @@ function printSpec(includeCosts = true) {
         })
         .filter(Boolean)
         .sort((a, b) => {
+            // Случай 1: Нестандартные изделия всегда внизу (если один нестандартный, а другой нет)
+            if (a.category === 'Нестандартные изделия' && b.category !== 'Нестандартные изделия') return 1;
+            if (b.category === 'Нестандартные изделия' && a.category !== 'Нестандартные изделия') return -1;
+            
+            // Случай 2: Если обе категории "Нестандартные изделия", сортируем по алфавиту по названию
+            if (a.category === 'Нестандартные изделия' && b.category === 'Нестандартные изделия') {
+                const nameA = (a.name || '').trim();
+                const nameB = (b.name || '').trim();
+                return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
+            }
+            
+            // Случай 3: Обычные товары - сортируем по категории, затем по названию
             const catDiff = a.category.localeCompare(b.category, 'ru', { sensitivity: 'base' });
             if (catDiff !== 0) return catDiff;
-            return a.name.localeCompare(b.name, 'ru', { sensitivity: 'base' });
+            const nameA = (a.name || '').trim();
+            const nameB = (b.name || '').trim();
+            return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
         });
     
     let groupedRows = '';

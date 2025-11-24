@@ -60,3 +60,4 @@ function renderDashboard() {
     }).join('') || '<tr><td colspan="3" class="py-4 text-center text-slate-400 text-sm">Нет операций</td></tr>';
 }
 
+
