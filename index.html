@@ -73,11 +73,13 @@
                     <button onclick="switchTab('movements')" id="tab-movements" class="tab-btn h-full px-1 flex items-center font-medium transition">Приход/Уход</button>
                     <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn h-full px-1 flex items-center font-medium transition">Проекты</button>
                     <button onclick="switchTab('specs')" id="tab-specs" class="tab-btn h-full px-1 flex items-center font-medium transition">Спецификации</button>
+                    <button onclick="switchTab('help')" id="tab-help" class="tab-btn h-full px-1 flex items-center font-medium transition"><i class="fas fa-question-circle mr-2"></i>Помощь</button>
                 </nav>
                  <nav class="flex space-x-4 h-full md:hidden">
                     <button onclick="switchTab('dashboard')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-chart-pie"></i></button>
                     <button onclick="switchTab('warehouse')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-boxes"></i></button>
                     <button onclick="switchTab('specs')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-file-invoice"></i></button>
+                    <button onclick="switchTab('help')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-question-circle"></i></button>
                 </nav>
                 <div class="flex items-center gap-2">
                     <button onclick="openSettings()" class="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 mr-1" title="Настройки">
@@ -166,7 +168,7 @@
                                 <th class="px-4 py-3 hidden md:table-cell sortable-header" onclick="setWarehouseSort('manuf')">Произв. <i class="fas fa-sort sort-icon"></i></th>
                                 <th class="px-4 py-3 hidden lg:table-cell sortable-header" onclick="setWarehouseSort('cat')">Категория <i class="fas fa-sort sort-icon"></i></th>
                                 <th class="px-4 py-3 text-center sortable-header" onclick="setWarehouseSort('qty')">Ост. <i class="fas fa-sort sort-icon"></i></th>
-                                <th class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">Рез.</th>
+                                <th class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell sortable-header whitespace-nowrap" onclick="setWarehouseSort('reserve')" title="Резерв">Рез. <i class="fas fa-sort sort-icon"></i></th>
                                 <th class="px-4 py-3 text-center text-blue-600 dark:text-blue-400">Своб.</th>
                                 <th class="px-4 py-3 text-right sortable-header" onclick="setWarehouseSort('cost')">Цена <i class="fas fa-sort sort-icon"></i></th>
                             </tr>
@@ -282,7 +284,7 @@
                     <div class="flex justify-between items-center mb-2 border-b border-slate-100 dark:border-slate-700 pb-2">
                         <div class="flex items-center gap-4">
                             <div>
-                                <h2 class="font-bold text-blue-800 dark:text-blue-400 text-sm" id="specTitle">...</h2>
+                                <input type="text" id="specTitle" class="font-bold text-blue-800 dark:text-blue-400 text-sm bg-transparent border-none outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 -ml-1" placeholder="Название спецификации" onblur="updateSpecName(this.value)" onkeypress="if(event.key==='Enter') this.blur()">
                                 <p class="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase" id="specSubtitle"></p>
                             </div>
                             <div class="flex items-center gap-2">
@@ -302,7 +304,7 @@
                             <input type="text" id="specItemSearch" class="w-full border dark:border-slate-600 p-2 rounded text-sm bg-white dark:bg-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Категория → Товар..." autocomplete="off" oninput="handleSpecSearch(true)" onfocus="handleSpecSearch()">
                             <div id="specSearchResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border border-t-0 dark:border-slate-600 shadow-2xl max-h-60 overflow-auto rounded-b-lg text-sm z-30"></div>
                         </div>
-                        <input type="number" id="specAddQty" class="w-16 shrink-0 border dark:border-slate-600 p-2 rounded text-sm text-center bg-white dark:bg-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" value="1">
+                        <input type="number" id="specAddQty" class="w-32 shrink-0 border dark:border-slate-600 p-2 rounded text-sm text-center bg-white dark:bg-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" value="1">
                         <button onclick="addToSpec()" class="bg-blue-600 text-white w-10 shrink-0 rounded hover:bg-blue-700 active:bg-blue-800 transition-colors flex items-center justify-center"><i class="fas fa-plus"></i></button>
                         <button onclick="openAddCustomItemModal()" class="bg-yellow-500 text-white px-3 shrink-0 rounded hover:bg-yellow-600 active:bg-yellow-700 shadow transition-colors whitespace-nowrap" title="Добавить нестандартное изделие"><i class="fas fa-plus-circle"></i></button>
                     </div>
@@ -330,6 +332,64 @@
                     </div>
                 </div>
                 <div id="specContentPlaceholder" class="flex items-center justify-center h-full text-slate-400 text-sm">Выберите спецификацию</div>
+            </div>
+        </div>
+
+        <!-- HELP -->
+        <div id="view-help" class="view-section h-full hidden p-4 overflow-y-auto">
+            <div class="max-w-7xl mx-auto">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 mb-6 transition-colors">
+                    <h1 class="text-3xl font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-3">
+                        <i class="fas fa-question-circle text-blue-600"></i>
+                        Справка и документация
+                    </h1>
+                    <p class="text-slate-600 dark:text-slate-400">Склад Online v5.0 — Полное руководство пользователя</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Навигация по разделам -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 sticky top-4 transition-colors">
+                            <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-3 text-sm uppercase">Разделы</h3>
+                            <nav class="space-y-1" id="helpNavigation">
+                                <button onclick="showHelpSection('quickstart')" class="help-nav-btn active w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-rocket mr-2"></i>Быстрый старт
+                                </button>
+                                <button onclick="showHelpSection('warehouse')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-boxes mr-2"></i>Управление складом
+                                </button>
+                                <button onclick="showHelpSection('movements')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-exchange-alt mr-2"></i>Движение товаров
+                                </button>
+                                <button onclick="showHelpSection('projects')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-project-diagram mr-2"></i>Проекты
+                                </button>
+                                <button onclick="showHelpSection('specs')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-file-invoice mr-2"></i>Спецификации
+                                </button>
+                                <button onclick="showHelpSection('dashboard')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-chart-pie mr-2"></i>Дашборд
+                                </button>
+                                <button onclick="showHelpSection('settings')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-cog mr-2"></i>Настройки
+                                </button>
+                                <button onclick="showHelpSection('tips')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-lightbulb mr-2"></i>Полезные фишки
+                                </button>
+                                <button onclick="showHelpSection('faq')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                    <i class="fas fa-question mr-2"></i>FAQ
+                                </button>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <!-- Контент справки -->
+                    <div class="lg:col-span-3">
+                        <div id="helpContent" class="space-y-6">
+                            <!-- Контент будет загружаться динамически -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -487,6 +547,7 @@
     <script src="js/projects.js"></script>
     <script src="js/specs.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/help.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/app.js"></script>
 </body>

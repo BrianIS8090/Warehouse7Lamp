@@ -203,11 +203,22 @@ function renderWarehouse() {
     const dir = sortState.warehouse.dir;
     const isAsc = dir === 'asc';
     
+    // Pre-calculate reserves for sorting (cache optimization)
+    if (key === 'reserve') {
+        getReserve(0); // This will populate the cache
+    }
+    
     if (key === 'name' || key === 'manuf' || key === 'cat') {
         filtered.sort((a, b) => {
             const va = (a[key] || '').toLowerCase();
             const vb = (b[key] || '').toLowerCase();
             return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        });
+    } else if (key === 'reserve') {
+        filtered.sort((a, b) => {
+            const va = getReserve(a.id) || 0;
+            const vb = getReserve(b.id) || 0;
+            return isAsc ? va - vb : vb - va;
         });
     } else {
         filtered.sort((a, b) => {
@@ -279,6 +290,7 @@ function renderWarehouse() {
             const resDisplay = res > 0 ? formatNumber(res) : '-';
             const freeDisplay = formatNumber(free);
             const costDisplay = formatCurrency(item.cost);
+            const nameColor = item.qty === 0 ? 'text-slate-400 dark:text-slate-500' : 'text-blue-700 dark:text-blue-400';
             
             const row = document.createElement('tr');
             row.className = 'border-b dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition h-14 group';
@@ -311,7 +323,7 @@ function renderWarehouse() {
                     </div>
                 </td>
                 <td class="px-4 py-3 text-center">${img}</td>
-                <td class="px-4 py-3 font-medium text-blue-700 dark:text-blue-400 group-hover:underline">${item.name}${fileIcon}</td>
+                <td class="px-4 py-3 font-medium ${nameColor} group-hover:underline">${item.name}${fileIcon}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${item.manuf || ''}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.cat || 'Разное'}</td>
                 <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${qtyDisplay}</td>

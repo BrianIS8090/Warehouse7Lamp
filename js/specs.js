@@ -5,7 +5,21 @@ function renderSpecProjectList() {
     
     container.innerHTML = ''; 
     
-    const activeProjects = (db.projects || []).filter(p => p.status === 'active').sort((a,b) => b.id - a.id);
+    // Сортировка по номеру заявки от большего к меньшему
+    const activeProjects = (db.projects || []).filter(p => p.status === 'active').sort((a, b) => {
+        let va = a.num || '';
+        let vb = b.num || '';
+        const na = parseFloat(va);
+        const nb = parseFloat(vb);
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+            va = na;
+            vb = nb;
+        }
+        // Сортировка от большего к меньшему
+        if (va < vb) return 1;
+        if (va > vb) return -1;
+        return 0;
+    });
     
     if (activeProjects.length === 0) {
         container.innerHTML = '<div class="text-center text-slate-400 mt-10 text-xs">Нет активных проектов</div>';
@@ -35,20 +49,25 @@ function renderSpecProjectList() {
             </button>`
             : '';
         
+        // Определяем классы для числа спецификаций (зеленый, если не 0)
+        const specCountClasses = specCount > 0
+            ? 'bg-green-200 dark:bg-green-600 text-green-700 dark:text-green-300'
+            : 'bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300';
+        
         // HTML проекта
         const projectHtml = `
             <div class="border-b dark:border-slate-600 ${projectClasses}">
                 <div class="p-3 flex items-center gap-2">
-                    <span onclick="toggleProjectExpand(${p.id})" class="w-4 flex items-center justify-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400">${expandIcon}</span>
-                    <div class="flex-1 cursor-pointer" onclick="selectSpecProject(${p.id})">
-                        <div class="font-bold text-sm flex justify-between items-center">
-                            <span class="truncate">${p.name}</span>
-                            <div class="flex items-center gap-2">
-                                <span class="bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded text-[10px]">${specCount}</span>
+                    <span onclick="toggleProjectExpand(${p.id})" class="w-4 flex items-center justify-center cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 flex-shrink-0">${expandIcon}</span>
+                    <div class="flex-1 min-w-0 cursor-pointer" onclick="selectSpecProject(${p.id})">
+                        <div class="font-bold text-sm flex items-center gap-2">
+                            <span class="truncate min-w-0 flex-1">${p.name}</span>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <span class="${specCountClasses} px-1.5 py-0.5 rounded text-[10px] whitespace-nowrap">${specCount}</span>
                                 ${addButton}
                             </div>
                         </div>
-                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">${p.num || '—'}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">${p.num || '—'}</div>
                     </div>
                 </div>
                 ${isExpanded ? renderProjectSpecs(p.id, specs) : ''}
@@ -384,7 +403,21 @@ function loadSpec(sid) {
     const s = db.specs[selectedProjectId].find(x => x.id === sid);
     document.getElementById('specEditor').classList.remove('hidden'); 
     document.getElementById('specContentPlaceholder').classList.add('hidden');
-    document.getElementById('specTitle').textContent = s.name; 
+    
+    // Устанавливаем название спецификации в поле ввода
+    const specTitleInput = document.getElementById('specTitle');
+    if (specTitleInput) {
+        specTitleInput.value = s.name || '';
+        // Если спецификация закрыта, делаем поле только для чтения
+        if (s.status === 'committed') {
+            specTitleInput.disabled = true;
+            specTitleInput.classList.add('cursor-not-allowed', 'opacity-75');
+        } else {
+            specTitleInput.disabled = false;
+            specTitleInput.classList.remove('cursor-not-allowed', 'opacity-75');
+        }
+    }
+    
     document.getElementById('specSubtitle').textContent = s.status==='committed'?'ЗАКРЫТА':''; 
     
     // Устанавливаем количество спецификации (по умолчанию 1 для старых спецификаций)
@@ -669,6 +702,31 @@ function remSpecItem(idx) {
     s.items.splice(idx, 1);
     save();
     loadSpec(selectedSpecId);
+}
+
+function updateSpecName(newName) {
+    if(!selectedProjectId || !selectedSpecId) return;
+    const trimmedName = (newName || '').trim();
+    if(!trimmedName) {
+        showToast("Название не может быть пустым");
+        loadSpec(selectedSpecId);
+        return;
+    }
+    const specList = (db.specs || {})[selectedProjectId] || [];
+    const spec = specList.find(x => x.id === selectedSpecId);
+    if(!spec) return;
+    
+    // Проверяем, не закрыта ли спецификация
+    if(spec.status === 'committed') {
+        showToast("Нельзя изменить название закрытой спецификации");
+        loadSpec(selectedSpecId);
+        return;
+    }
+    
+    spec.name = trimmedName;
+    save();
+    renderSpecProjectList(); // Обновляем список проектов, чтобы отобразить новое название
+    showToast("Название обновлено");
 }
 
 function updateSpecQuantity(rawValue) {
