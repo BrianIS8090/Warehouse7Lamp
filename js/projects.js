@@ -88,26 +88,39 @@ function closeProject(pid) {
     
     if(err) return alert(err); 
     
+    const now = Date.now();
+    let movCounter = 0;
+    
     drafts.forEach(s => { 
         s.items.forEach(r => { 
             if(!r.isCustom) { 
                 const i = db.items.find(x => x.id === r.itemId); 
-                i.qty -= r.qty; 
+                i.qty -= r.qty;
+                i.updatedAt = now;
+                markChanged('items', i.id);
+                
+                const movId = 'mov_' + now + '_' + movCounter++;
                 db.movements.unshift({
-                    id: 'mov_' + Date.now(), 
+                    id: movId, 
                     date: new Date().toLocaleString(), 
                     type: 'out', 
                     itemId: i.id, 
                     itemName: `${i.name} (Закрытие)`, 
-                    qty: r.qty
-                }); 
+                    qty: r.qty,
+                    updatedAt: now
+                });
+                markChanged('movements', movId);
             } 
         }); 
         s.status = 'committed'; 
-        s.date = new Date().toLocaleDateString(); 
-    }); 
+        s.date = new Date().toLocaleDateString();
+        s.updatedAt = now;
+    });
+    markChanged('specs', pid);
     
-    p.status = 'closed'; 
+    p.status = 'closed';
+    p.updatedAt = now;
+    markChanged('projects', pid); 
     
     // Логирование
     if (typeof logActivity === 'function') {
@@ -155,12 +168,13 @@ function duplicateProject(pid) {
     
     if(!confirm(`Создать копию проекта "${p.name}"?`)) return;
     
-    const newId = Date.now();
+    const now = Date.now();
     const newProject = {
         ...p,
-        id: newId,
+        id: now,
         name: p.name + " (Копия)",
-        status: 'active'
+        status: 'active',
+        updatedAt: now
     };
     
     const oldSpecs = (db.specs || {})[pid] || [];
@@ -169,12 +183,15 @@ function duplicateProject(pid) {
         id: 's_' + Math.random().toString(36).substr(2, 9),
         status: 'draft', 
         date: new Date().toLocaleDateString(),
-        items: s.items.map(i => ({...i})) 
+        items: s.items.map(i => ({...i})),
+        updatedAt: now
     }));
     
     db.projects.push(newProject);
+    markChanged('projects', now);
     if(!db.specs) db.specs = {};
-    db.specs[newId] = newSpecs;
+    db.specs[now] = newSpecs;
+    markChanged('specs', now);
     
     save();
     closeModal('projectCardModal');
@@ -268,7 +285,9 @@ function saveProjectFromCard() {
         p.start = document.getElementById('pcStart').value; 
         p.end = document.getElementById('pcEnd').value; 
         p.cost = parseFloat(document.getElementById('pcCost').value) || 0; 
-        p.file = document.getElementById('pcFile').value || ''; 
+        p.file = document.getElementById('pcFile').value || '';
+        p.updatedAt = Date.now();
+        markChanged('projects', p.id);
         
         // Логирование
         if (typeof logActivity === 'function' && typeof trackChanges === 'function') {
@@ -325,11 +344,13 @@ function deleteProjectFromCard() {
     const projectIndex = db.projects.findIndex(x => x.id === id);
     if(projectIndex !== -1) {
         db.projects.splice(projectIndex, 1);
+        markDeleted('projects', id);
     }
 
     // Удаляем спецификации проекта
     if(db.specs && db.specs[p.id]) {
         delete db.specs[p.id];
+        markDeleted('specs', p.id);
     }
 
     // Если это был выбранный проект, сбрасываем выбор

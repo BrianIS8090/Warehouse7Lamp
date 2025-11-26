@@ -21,7 +21,7 @@ body { font-family: 'Inter', sans-serif; }
 
 /* Toast Notification */
 .toast { 
-    position: fixed; bottom: 20px; right: 20px; 
+    position: fixed; bottom: 90px; right: 20px; 
     background: #1e293b; color: white; 
     padding: 12px 24px; border-radius: 8px; 
     box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
@@ -138,4 +138,37 @@ body { font-family: 'Inter', sans-serif; }
 
 .help-nav-btn:hover {
     transform: translateX(4px);
+}
+
+/* Dropdown Menu */
+#dropdownMenu {
+    animation: fadeIn 0.2s ease-out;
+}
+
+#dropdownMenu button {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dark #dropdownMenu button {
+    border-bottom-color: #475569;
+}
+
+#dropdownMenu button:last-child {
+    border-bottom: none;
+}
+
+#dropdownMenu button.bg-blue-50,
+#dropdownMenu button.dark\:bg-blue-900\/20 {
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

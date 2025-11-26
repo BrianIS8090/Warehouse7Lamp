@@ -141,9 +141,12 @@ function saveMovementIn() {
     }
     
     const oldQty = item.qty;
+    const now = Date.now();
     item.qty += qty;
+    item.updatedAt = now;
+    markChanged('items', item.id);
     
-    const movementId = 'mov_' + Date.now();
+    const movementId = 'mov_' + now;
     db.movements.unshift({
         id: movementId, 
         date: new Date().toLocaleString(), 
@@ -151,8 +154,10 @@ function saveMovementIn() {
         itemId: item.id, 
         itemName: item.name, 
         qty,
-        invoiceNumber: invoice || null
-    }); 
+        invoiceNumber: invoice || null,
+        updatedAt: now
+    });
+    markChanged('movements', movementId); 
     
     // Логирование
     if (typeof logActivity === 'function') {
@@ -201,17 +206,22 @@ function saveMovementOut() {
     }
     
     const oldQty = item.qty;
+    const now = Date.now();
     item.qty -= qty;
+    item.updatedAt = now;
+    markChanged('items', item.id);
     
-    const movementId = 'mov_' + Date.now();
+    const movementId = 'mov_' + now;
     db.movements.unshift({
         id: movementId, 
         date: new Date().toLocaleString(), 
         type: 'out', 
         itemId: item.id, 
         itemName: item.name, 
-        qty
-    }); 
+        qty,
+        updatedAt: now
+    });
+    markChanged('movements', movementId); 
     
     // Логирование
     if (typeof logActivity === 'function') {
@@ -256,6 +266,8 @@ function undoMovement(mid) {
         } else {
             item.qty += m.qty;
         }
+        item.updatedAt = Date.now();
+        markChanged('items', item.id);
         
         // Логирование
         if (typeof logActivity === 'function') {
@@ -268,6 +280,7 @@ function undoMovement(mid) {
     }
     
     db.movements.splice(idx, 1);
+    markDeleted('movements', mid);
     save();
     showToast("Операция отменена");
 }
@@ -300,6 +313,171 @@ function renderDatalists() {
     (db.items || []).forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${formatNumber(i.qty)}</option>`); 
 }
 
+// --- MOVEMENTS PAGE ITEMS TABLE ---
+let movCurrentCategory = 'all';
 
+function renderMovementsCategoryFilter(preserveSelection = false) {
+    const select = document.getElementById('movCategoryFilter');
+    if (!select) return;
+    
+    // Сохраняем текущий выбор перед обновлением
+    if (preserveSelection) {
+        movCurrentCategory = select.value || 'all';
+    }
+    
+    const items = db.items || [];
+    const cats = [...new Set(items.map(i => i.cat || 'Без категории'))].sort((a, b) => {
+        return (a || '').localeCompare(b || '', 'ru');
+    });
+    
+    let html = '<option value="all">Все категории</option>';
+    cats.forEach(cat => {
+        const selected = movCurrentCategory === cat ? 'selected' : '';
+        html += `<option value="${cat}" ${selected}>${cat}</option>`;
+    });
+    
+    select.innerHTML = html;
+    select.value = movCurrentCategory;
+}
 
+function renderMovementsItemsTable() {
+    const tbody = document.getElementById('movItemsTableBody');
+    const select = document.getElementById('movCategoryFilter');
+    if (!tbody) return;
+    
+    // Читаем текущую выбранную категорию ДО обновления options
+    if (select) {
+        movCurrentCategory = select.value || 'all';
+    }
+    
+    // Обновляем список категорий, сохраняя выбор
+    renderMovementsCategoryFilter(false);
+    
+    const items = db.items || [];
+    
+    // Filter by category
+    let filtered = items;
+    if (movCurrentCategory !== 'all') {
+        filtered = items.filter(i => (i.cat || 'Без категории') === movCurrentCategory);
+    }
+    
+    // Sort by name
+    filtered.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ru'));
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">Нет товаров</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    filtered.forEach(item => {
+        const img = item.img 
+            ? `<img src="${item.img}" class="w-8 h-8 object-cover rounded border border-slate-200 dark:border-slate-600" alt="" onerror="this.src='https://placehold.co/32?text=-'">`
+            : '<span class="text-slate-300 dark:text-slate-600 text-xs">—</span>';
+        
+        const qtyColor = item.qty <= 0 ? 'text-red-500' : (item.qty < 5 ? 'text-orange-500' : 'text-slate-700 dark:text-slate-300');
+        
+        html += `<tr class="border-b dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition" onclick="selectMovTableItem(${item.id})">
+            <td class="px-2 py-2 text-center">${img}</td>
+            <td class="px-2 py-2 text-xs text-slate-700 dark:text-slate-300 truncate max-w-[120px]" title="${item.name}">${item.name}</td>
+            <td class="px-2 py-2 text-center text-[10px] text-slate-500 dark:text-slate-400">${item.unit || 'шт.'}</td>
+            <td class="px-2 py-2 text-right font-bold text-xs ${qtyColor}">${formatNumber(item.qty)}</td>
+        </tr>`;
+    });
+    
+    tbody.innerHTML = html;
+}
 
+function selectMovTableItem(itemId) {
+    const item = db.items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // Update the form input
+    const input = document.getElementById('movItemInput');
+    if (input) {
+        input.value = `${item.cat || 'Разное'} → ${item.name}`;
+        input.dataset.itemId = item.id;
+        input.dataset.category = item.cat || 'Разное';
+    }
+    
+    // Hide search results
+    const results = document.getElementById('movSearchResults');
+    if (results) results.classList.add('hidden');
+    
+    // Update the selected item card
+    updateMovSelectedItemCard(item);
+    
+    // Focus on quantity field
+    const qtyInput = document.getElementById('movQty');
+    if (qtyInput) qtyInput.focus();
+}
+
+function updateMovSelectedItemCard(item) {
+    const cardContainer = document.getElementById('movSelectedItemCard');
+    if (!cardContainer) return;
+    
+    if (!item) {
+        cardContainer.innerHTML = `
+            <div class="text-slate-400 dark:text-slate-500 text-sm text-center">
+                <i class="fas fa-hand-pointer text-3xl mb-2 block"></i>
+                Выберите товар из таблицы или формы
+            </div>
+        `;
+        return;
+    }
+    
+    const imgHtml = item.img 
+        ? `<img src="${item.img}" class="w-24 h-24 object-cover rounded-lg border border-slate-200 dark:border-slate-600 mb-3" alt="${item.name}" onerror="this.src='https://placehold.co/96?text=Нет+фото'">`
+        : `<div class="w-24 h-24 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 flex items-center justify-center mb-3">
+            <i class="fas fa-box text-slate-300 dark:text-slate-500 text-2xl"></i>
+           </div>`;
+    
+    const qtyColor = item.qty <= 0 ? 'text-red-600 dark:text-red-400' : (item.qty < 5 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400');
+    
+    cardContainer.innerHTML = `
+        <div class="flex flex-col items-center text-center">
+            ${imgHtml}
+            <h4 class="font-bold text-slate-800 dark:text-white text-sm mb-1 line-clamp-2">${item.name}</h4>
+            <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">${item.cat || 'Без категории'}</div>
+            <div class="flex items-center gap-2 text-lg font-bold ${qtyColor}">
+                <span>${formatNumber(item.qty)}</span>
+                <span class="text-xs font-normal text-slate-500 dark:text-slate-400">${item.unit || 'шт.'}</span>
+            </div>
+            <button onclick="openItemCard(${item.id})" class="mt-3 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                <i class="fas fa-external-link-alt mr-1"></i>Карточка товара
+            </button>
+        </div>
+    `;
+}
+
+// Override selectMovSearchItem to also update the card
+const originalSelectMovSearchItem = selectMovSearchItem;
+selectMovSearchItem = function(itemId) {
+    originalSelectMovSearchItem(itemId);
+    const item = db.items.find(i => i.id == itemId);
+    if (item) {
+        updateMovSelectedItemCard(item);
+    }
+};
+
+// Update card and table after movement operations
+const originalSaveMovementIn = saveMovementIn;
+saveMovementIn = function() {
+    originalSaveMovementIn();
+    renderMovementsItemsTable();
+    updateMovSelectedItemCard(null);
+};
+
+const originalSaveMovementOut = saveMovementOut;
+saveMovementOut = function() {
+    originalSaveMovementOut();
+    renderMovementsItemsTable();
+    updateMovSelectedItemCard(null);
+};
+
+const originalUndoMovement = undoMovement;
+undoMovement = function(mid) {
+    originalUndoMovement(mid);
+    renderMovementsItemsTable();
+    renderHistoryTable();
+};

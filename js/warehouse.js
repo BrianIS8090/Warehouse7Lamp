@@ -265,7 +265,7 @@ function renderWarehouse() {
     
     if (filtered.length === 0) {
         const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = '<td colspan="10" class="p-8 text-center text-slate-400">Ничего не найдено</td>';
+        emptyRow.innerHTML = '<td colspan="11" class="p-8 text-center text-slate-400">Ничего не найдено</td>';
         fragment.appendChild(emptyRow);
     } else {
         // Pre-calculate reserves for all items at once (cache optimization)
@@ -346,6 +346,7 @@ function renderWarehouse() {
                 <td class="px-4 py-3 font-medium ${nameColor} group-hover:underline">${item.name}${fileIcon}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${item.manuf || ''}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.cat || 'Разное'}</td>
+                <td class="px-4 py-3 text-center text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.unit || 'шт.'}</td>
                 <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${qtyDisplay}</td>
                 <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${resDisplay}</td>
                 <td class="px-4 py-3 text-center font-bold ${freeColor}">${freeDisplay}</td>
@@ -541,6 +542,7 @@ function deleteSelectedItems() {
         const idx = db.items.findIndex(i => i.id === itemId);
         if (idx > -1) {
             db.items.splice(idx, 1);
+            markDeleted('items', itemId); // Для инкрементальной синхронизации
             deletedCount++;
         }
     });
@@ -613,6 +615,7 @@ function saveQuickMove() {
     if(!item) return;
 
     const oldQty = item.qty;
+    const now = Date.now();
     
     if (type === 'out') {
             if(item.qty < qty) return alert('Недостаточно товара на складе!');
@@ -620,16 +623,20 @@ function saveQuickMove() {
     } else {
             item.qty += qty;
     }
+    item.updatedAt = now;
+    markChanged('items', item.id);
 
-    const movementId = 'mov_' + Date.now();
+    const movementId = 'mov_' + now;
     db.movements.unshift({
         id: movementId,
         date: new Date().toLocaleString(),
         type: type,
         itemId: item.id,
         itemName: item.name,
-        qty: qty
+        qty: qty,
+        updatedAt: now
     });
+    markChanged('movements', movementId);
     
     // Логирование
     if (typeof logActivity === 'function') {

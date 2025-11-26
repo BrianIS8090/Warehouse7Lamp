@@ -42,7 +42,7 @@ const ACTION_NAMES = {
 const TAB_NAMES = {
     dashboard: 'Дашборд',
     warehouse: 'Склад',
-    movements: 'Приход/Уход',
+    movements: 'Работа со складом',
     projects: 'Проекты',
     specs: 'Спецификации',
     help: 'Помощь'
@@ -193,6 +193,7 @@ function initUserPermissions(firebaseUser) {
             createdAt: new Date().toISOString()
         };
         currentUser = { id: adminId, ...db.users[adminId] };
+        markChanged('users', adminId); // Помечаем для синхронизации
         save(false);
     } else {
         // Новый пользователь без роли - нужно добавить в систему
@@ -281,6 +282,24 @@ function applyPermissions() {
             tabBtn.style.display = canAccessTab(tab) ? '' : 'none';
         }
     });
+    
+    // Управление видимостью пунктов в выпадающем меню
+    const menuTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'];
+    let hasAnyAccess = false;
+    menuTabs.forEach(tab => {
+        const menuItem = document.getElementById(`menu-tab-${tab}`);
+        if (menuItem) {
+            const hasAccess = canAccessTab(tab);
+            menuItem.style.display = hasAccess ? '' : 'none';
+            if (hasAccess) hasAnyAccess = true;
+        }
+    });
+    
+    // Показываем кнопку меню, если есть хотя бы один доступный пункт
+    const dropdownMenuBtn = document.getElementById('dropdownMenuBtn');
+    if (dropdownMenuBtn) {
+        dropdownMenuBtn.style.display = hasAnyAccess ? '' : 'none';
+    }
     
     // Mobile navigation icons
     const mobileNavBtns = document.querySelectorAll('nav.md\\:hidden button');
@@ -581,6 +600,7 @@ function saveUserFromModal() {
             isActive: isActive,
             updatedAt: new Date().toISOString()
         };
+        markChanged('users', userId); // Помечаем для синхронизации
         
         const changes = trackChanges(oldUser, db.users[userId], ['name', 'role', 'isActive']);
         logActivity('user_edit', 'user', userId, email, changes);
@@ -601,14 +621,38 @@ function saveUserFromModal() {
             isActive: isActive,
             createdAt: new Date().toISOString()
         };
+        markChanged('users', newId); // Помечаем для синхронизации
         
         logActivity('user_create', 'user', newId, email, null);
         showToast('Пользователь добавлен');
     }
     
     save(false);
-    closeModal('editUserModal');
     renderUsersList();
+    
+    // Очищаем поля формы перед закрытием
+    document.getElementById('editUserId').value = '';
+    document.getElementById('editUserEmail').value = '';
+    document.getElementById('editUserEmail').readOnly = false;
+    document.getElementById('editUserName').value = '';
+    document.getElementById('editUserRole').value = 'sales_manager';
+    document.getElementById('editUserActive').checked = true;
+    
+    // Закрываем модальное окно после небольшой задержки, чтобы UI успел обновиться
+    setTimeout(() => {
+        if (typeof closeModal === 'function') {
+            closeModal('editUserModal');
+        } else {
+            // Fallback: прямая манипуляция DOM
+            const modal = document.getElementById('editUserModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+            }
+        }
+    }, 100);
 }
 
 function deleteUser(userId) {
@@ -624,6 +668,7 @@ function deleteUser(userId) {
     
     logActivity('user_delete', 'user', userId, user.email, null);
     delete db.users[userId];
+    markDeleted('users', userId); // Помечаем для синхронизации
     save(false);
     renderUsersList();
     showToast('Пользователь удалён');
@@ -767,6 +812,7 @@ function saveRolePermissions() {
     };
     
     db.rolePermissions[role] = permissions;
+    pendingChanges.rolePermissions = true; // Помечаем для синхронизации
     
     logActivity('role_change', 'role', role, ROLE_NAMES[role], { permissions });
     save(false);
@@ -788,6 +834,7 @@ function resetRolePermissions() {
     
     initRolesData();
     db.rolePermissions[role] = JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMISSIONS[role]));
+    pendingChanges.rolePermissions = true; // Помечаем для синхронизации
     save(false);
     renderRolePermissions();
     showToast('Права сброшены к значениям по умолчанию');

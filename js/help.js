@@ -164,13 +164,13 @@ function getHelpSectionContent(sectionId) {
             <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                     <i class="fas fa-exchange-alt text-blue-600"></i>
-                    Движение товаров
+                    Работа со складом
                 </h2>
                 
                 <div class="prose dark:prose-invert max-w-none">
                     <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">⬇️ Операция прихода</h3>
                     <ol class="text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside mb-4">
-                        <li>Перейдите на вкладку <strong>"Приход/Уход"</strong></li>
+                        <li>Откройте выпадающее меню <strong>"Ещё"</strong> в навигации и выберите <strong>"Работа со складом"</strong></li>
                         <li>Начните вводить название товара (появится выпадающий список)</li>
                         <li>Выберите товар из списка</li>
                         <li>Введите количество</li>

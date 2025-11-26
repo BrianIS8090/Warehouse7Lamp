@@ -1,7 +1,100 @@
 // --- MODALS & DIALOGS ---
 function openCreateItemModal() { 
     document.getElementById('newItemName').value=''; 
+    document.getElementById('newItemManuf').value='';
+    document.getElementById('newItemCat').value='';
+    document.getElementById('newItemQty').value='0';
+    document.getElementById('newItemCost').value='0';
+    document.getElementById('newItemChars').value='';
+    document.getElementById('newItemImg').value='';
+    document.getElementById('newItemFile').value='';
+    
+    // Reset autocomplete state
+    const results = document.getElementById('newItemNameResults');
+    const warning = document.getElementById('newItemDuplicateWarning');
+    if (results) results.classList.add('hidden');
+    if (warning) warning.classList.add('hidden');
+    
     openModal('createItemModal'); 
+}
+
+// Debounced search for new item name autocomplete
+const debouncedNewItemNameSearch = debounce(function() {
+    handleNewItemNameSearchInternal();
+}, 200);
+
+function handleNewItemNameSearch() {
+    debouncedNewItemNameSearch();
+}
+
+function handleNewItemNameSearchInternal() {
+    const input = document.getElementById('newItemName');
+    const results = document.getElementById('newItemNameResults');
+    const warning = document.getElementById('newItemDuplicateWarning');
+    const warningText = document.getElementById('newItemDuplicateText');
+    
+    if (!input || !results || !warning) return;
+    
+    const searchTerm = input.value.trim().toLowerCase();
+    
+    // Hide results and warning if search is empty
+    if (searchTerm.length < 2) {
+        results.classList.add('hidden');
+        warning.classList.add('hidden');
+        return;
+    }
+    
+    const items = db.items || [];
+    
+    // Find similar items
+    const similarItems = items.filter(item => {
+        const name = (item.name || '').toLowerCase();
+        return name.includes(searchTerm) || searchTerm.includes(name);
+    }).slice(0, 10);
+    
+    // Check for exact match
+    const exactMatch = items.find(item => 
+        (item.name || '').toLowerCase() === searchTerm
+    );
+    
+    // Show warning for exact match
+    if (exactMatch) {
+        warning.classList.remove('hidden');
+        warningText.textContent = `Товар "${exactMatch.name}" уже существует на складе (остаток: ${formatNumber(exactMatch.qty)} ${exactMatch.unit || 'шт.'})`;
+    } else {
+        warning.classList.add('hidden');
+    }
+    
+    // Render similar items dropdown
+    if (similarItems.length > 0) {
+        let html = '<div class="px-3 py-1 text-[10px] uppercase tracking-wider text-slate-400 bg-slate-50 dark:bg-slate-600 dark:text-slate-300">Похожие товары</div>';
+        similarItems.forEach(item => {
+            const isExact = (item.name || '').toLowerCase() === searchTerm;
+            const bgClass = isExact ? 'bg-red-50 dark:bg-red-900/30' : '';
+            html += `<div class="px-3 py-2 hover:bg-blue-50 dark:hover:bg-slate-600 cursor-pointer flex justify-between items-center text-sm ${bgClass}" onclick="selectExistingItemForNew(${item.id})">
+                <span class="text-slate-700 dark:text-slate-100 ${isExact ? 'font-bold text-red-600 dark:text-red-400' : ''}">${item.name}</span>
+                <span class="text-xs text-slate-400">${item.cat || ''} | Ост: ${formatNumber(item.qty)}</span>
+            </div>`;
+        });
+        results.innerHTML = html;
+        results.classList.remove('hidden');
+    } else {
+        results.classList.add('hidden');
+    }
+}
+
+function selectExistingItemForNew(itemId) {
+    const item = db.items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // Close create modal and open item card
+    closeModal('createItemModal');
+    
+    // Small delay to allow modal transition
+    setTimeout(() => {
+        openItemCard(itemId);
+        showToast('Открыта карточка существующего товара');
+    }, 350);
 }
 
 function createNewItem() { 
@@ -11,10 +104,29 @@ function createNewItem() {
         return;
     }
     
+    const newName = document.getElementById('newItemName').value.trim();
+    
+    // Проверка на пустое имя
+    if (!newName) {
+        showToast('Введите наименование товара');
+        return;
+    }
+    
+    // Проверка на дубликат (точное совпадение)
+    const existingItem = (db.items || []).find(item => 
+        (item.name || '').toLowerCase() === newName.toLowerCase()
+    );
+    
+    if (existingItem) {
+        showToast(`Товар "${existingItem.name}" уже существует! Используйте существующий товар.`);
+        return;
+    }
+    
     const cost = parseFloat(document.getElementById('newItemCost').value) || 0;
+    const now = Date.now();
     const i = { 
-        id:Date.now(), 
-        name:document.getElementById('newItemName').value, 
+        id: now, 
+        name: newName, 
         manuf:document.getElementById('newItemManuf').value, 
         cat:document.getElementById('newItemCat').value||'Разное', 
         qty:parseFloat(document.getElementById('newItemQty').value)||0, 
@@ -22,7 +134,8 @@ function createNewItem() {
         cost: cost,
         chars:document.getElementById('newItemChars').value, 
         img:document.getElementById('newItemImg').value, 
-        file:document.getElementById('newItemFile').value 
+        file:document.getElementById('newItemFile').value,
+        updatedAt: now // Для инкрементальной синхронизации
     };
     
     // Устанавливаем дату последнего изменения цены при создании товара с ценой
@@ -30,18 +143,21 @@ function createNewItem() {
         i.lastPriceChangeDate = new Date().toISOString();
     } 
     
-    if(!i.name)return; 
-    db.items.push(i); 
+    db.items.push(i);
+    markChanged('items', i.id); // Отмечаем для инкрементальной синхронизации
     
     if(i.qty>0) {
+        const movId = 'mov_' + now;
         db.movements.unshift({
-            id: 'mov_' + Date.now(), 
+            id: movId, 
             date:new Date().toLocaleString(), 
             type:'in', 
             itemId:i.id, 
             itemName:i.name, 
-            qty:i.qty
-        }); 
+            qty:i.qty,
+            updatedAt: now
+        });
+        markChanged('movements', movId);
     }
     
     // Логирование
@@ -50,7 +166,13 @@ function createNewItem() {
     }
     
     save(); 
-    closeModal('createItemModal'); 
+    closeModal('createItemModal');
+    showToast('Товар создан');
+    
+    // Refresh movements page if visible
+    if (typeof renderMovementsItemsTable === 'function') {
+        renderMovementsItemsTable();
+    }
 }
 
 function openCreateProjectModal() { 
@@ -65,8 +187,9 @@ function createNewProject() {
         return;
     }
     
+    const now = Date.now();
     const p = {
-        id:Date.now(), 
+        id: now, 
         year:document.getElementById('newPrYear').value, 
         num:document.getElementById('newPrNum').value, 
         name:document.getElementById('newPrName').value, 
@@ -76,12 +199,15 @@ function createNewProject() {
         end:document.getElementById('newPrEnd').value, 
         cost:parseFloat(document.getElementById('newPrCost').value)||0, 
         file:document.getElementById('newPrFile').value || '',
-        status:'active'
+        status:'active',
+        updatedAt: now
     }; 
     
     if(!p.name)return; 
-    db.projects.push(p); 
-    db.specs[p.id]=[]; 
+    db.projects.push(p);
+    markChanged('projects', p.id);
+    db.specs[p.id]=[];
+    markChanged('specs', p.id); 
     
     // Логирование
     if (typeof logActivity === 'function') {
@@ -277,7 +403,9 @@ function deleteItemFromCard() {
             logActivity('item_delete', 'item', item.id, item.name, null);
         }
         
+        const deletedId = item.id;
         db.items.splice(idx, 1);
+        markDeleted('items', deletedId); // Отмечаем для инкрементальной синхронизации
         // Удаляем товар из выбранных, если он был выбран
         selectedItems.delete(item.id);
         save();
@@ -330,7 +458,9 @@ function saveItemFromCard() {
     
     i.chars = document.getElementById('cardChars').value; 
     i.img = document.getElementById('cardImg').value; 
-    i.file = document.getElementById('cardFile').value; 
+    i.file = document.getElementById('cardFile').value;
+    i.updatedAt = Date.now(); // Для инкрементальной синхронизации
+    markChanged('items', i.id); 
     
     // Логирование
     if (typeof logActivity === 'function' && typeof trackChanges === 'function') {
@@ -441,6 +571,9 @@ function openUserProfile() {
     // Обновляем аватар с инициалами
     updateUserAvatar();
     
+    // Обновляем контролы кастомизации UI
+    updateUICustomizationControls();
+    
     openModal('userProfileModal');
 }
 
@@ -465,6 +598,7 @@ function saveUserProfile() {
     if (db.users && db.users[currentUser.id]) {
         db.users[currentUser.id].name = newName;
         db.users[currentUser.id].updatedAt = new Date().toISOString();
+        markChanged('users', currentUser.id); // Помечаем для синхронизации
         
         // Обновляем текущего пользователя
         currentUser.name = newName;
@@ -655,6 +789,13 @@ document.addEventListener('click', (event) => {
     if(movInput && movResults && !movInput.contains(event.target) && !movResults.contains(event.target)) {
         movResults.classList.add('hidden');
     }
+    
+    // Close new item name autocomplete
+    const newItemInput = document.getElementById('newItemName');
+    const newItemResults = document.getElementById('newItemNameResults');
+    if(newItemInput && newItemResults && !newItemInput.contains(event.target) && !newItemResults.contains(event.target)) {
+        newItemResults.classList.add('hidden');
+    }
 });
 
 // --- DATA IMPORT/EXPORT ---
@@ -716,8 +857,9 @@ function importLegacyCSV(input) {
                 // but we can store the old ID in a hidden field if needed. 
                 // Using Date.now() + loop index to ensure uniqueness during fast import
                 const cost = parseFloat(costStr) || 0;
+                const now = Date.now() + i;
                 const newItem = {
-                    id: Date.now() + i, 
+                    id: now, 
                     name: row[1] || 'Без названия',
                     manuf: row[2] || '',
                     cat: row[3] || 'Разное',
@@ -726,7 +868,8 @@ function importLegacyCSV(input) {
                     cost: cost,
                     chars: row[10] || '',
                     img: imgPath, 
-                    file: row[14] || ''
+                    file: row[14] || '',
+                    updatedAt: now
                 };
                 
                 // Устанавливаем дату последнего изменения цены при импорте, если цена больше 0
@@ -735,17 +878,21 @@ function importLegacyCSV(input) {
                 }
 
                 db.items.push(newItem);
+                markChanged('items', newItem.id);
                 
                 // Add initial movement record
                 if (newItem.qty > 0) {
+                    const movId = 'mov_imp_' + newItem.id;
                     db.movements.push({
-                        id: 'mov_imp_' + newItem.id,
+                        id: movId,
                         date: new Date().toLocaleString(),
                         type: 'in',
                         itemId: newItem.id,
                         itemName: newItem.name,
-                        qty: newItem.qty
+                        qty: newItem.qty,
+                        updatedAt: now
                     });
+                    markChanged('movements', movId);
                 }
                 importedCount++;
             }
@@ -865,5 +1012,99 @@ function exportToExcel() {
         document.body.appendChild(link);
         link.click();
         link.remove();
+}
+
+// Выпадающее меню
+function toggleDropdownMenu() {
+    const menu = document.getElementById('dropdownMenu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+function closeDropdownMenu() {
+    const menu = document.getElementById('dropdownMenu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
+}
+
+// --- UI CUSTOMIZATION FUNCTIONS ---
+
+// Load UI settings from localStorage
+function loadUISettings() {
+    try {
+        const saved = localStorage.getItem('userUISettings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Merge with defaults to handle new settings
+            userUISettings = { ...userUISettings, ...parsed };
+        }
+    } catch (e) {
+        console.error('Error loading UI settings:', e);
+    }
+}
+
+// Save UI settings to localStorage
+function saveUISettings() {
+    try {
+        localStorage.setItem('userUISettings', JSON.stringify(userUISettings));
+    } catch (e) {
+        console.error('Error saving UI settings:', e);
+    }
+}
+
+// Apply all UI settings to the interface
+function applyUISettings() {
+    applyCategoryPanelPosition();
+    // Future: apply other settings here
+}
+
+// Apply category panel position setting
+function applyCategoryPanelPosition() {
+    const categoryPanel = document.getElementById('categoryPanel');
+    const tableContainer = document.getElementById('warehouseTableContainer');
+    
+    if (!categoryPanel || !tableContainer) return;
+    
+    if (userUISettings.categoryPanelPosition === 'right') {
+        // Panel on the right
+        categoryPanel.classList.remove('order-first', 'md:order-first');
+        categoryPanel.classList.add('order-last', 'md:order-last');
+        tableContainer.classList.remove('order-last', 'md:order-last');
+        tableContainer.classList.add('order-first', 'md:order-first');
+    } else {
+        // Panel on the left (default)
+        categoryPanel.classList.remove('order-last', 'md:order-last');
+        categoryPanel.classList.add('order-first', 'md:order-first');
+        tableContainer.classList.remove('order-first', 'md:order-first');
+        tableContainer.classList.add('order-last', 'md:order-last');
+    }
+}
+
+// Toggle category panel position between left and right
+function toggleCategoryPanelPosition(position) {
+    userUISettings.categoryPanelPosition = position;
+    saveUISettings();
+    applyCategoryPanelPosition();
+}
+
+// Update UI customization controls in user profile modal
+function updateUICustomizationControls() {
+    const leftBtn = document.getElementById('btnCategoryLeft');
+    const rightBtn = document.getElementById('btnCategoryRight');
+    
+    if (!leftBtn || !rightBtn) return;
+    
+    const activeClass = 'bg-blue-600 text-white';
+    const inactiveClass = 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200';
+    
+    if (userUISettings.categoryPanelPosition === 'left') {
+        leftBtn.className = `flex-1 py-2 px-3 rounded-l-lg font-medium text-sm transition ${activeClass}`;
+        rightBtn.className = `flex-1 py-2 px-3 rounded-r-lg font-medium text-sm transition ${inactiveClass} hover:bg-slate-200 dark:hover:bg-slate-600`;
+    } else {
+        leftBtn.className = `flex-1 py-2 px-3 rounded-l-lg font-medium text-sm transition ${inactiveClass} hover:bg-slate-200 dark:hover:bg-slate-600`;
+        rightBtn.className = `flex-1 py-2 px-3 rounded-r-lg font-medium text-sm transition ${activeClass}`;
+    }
 }
 

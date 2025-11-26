@@ -193,16 +193,19 @@ function openCreateNewSpec() {
             db.specs[selectedProjectId] = []; 
         } 
         
+        const now = Date.now();
         const newSpec = { 
-            id: 's_' + Date.now(), 
+            id: 's_' + now, 
             name: n, 
             status: 'draft', 
             date: new Date().toLocaleDateString(), 
             quantity: 1,  // Количество единиц продукции по умолчанию
-            items: [] 
+            items: [],
+            updatedAt: now
         }; 
         
-        db.specs[selectedProjectId].push(newSpec); 
+        db.specs[selectedProjectId].push(newSpec);
+        markChanged('specs', selectedProjectId); 
         selectedSpecId = newSpec.id; 
         // Раскрываем проект при создании спецификации
         expandedProjects.add(selectedProjectId);
@@ -310,8 +313,9 @@ function copySpecToProject(sourceSpec, sourceProjectId, sourceProjectName) {
         }
         
         // Create a deep copy of the spec
+        const now = Date.now();
         const newSpec = {
-            id: 's_' + Date.now(),
+            id: 's_' + now,
             name: sourceSpec.name + ' (Копия)',
             status: 'draft', // Always create as draft
             date: new Date().toLocaleDateString(),
@@ -325,10 +329,12 @@ function copySpecToProject(sourceSpec, sourceProjectId, sourceProjectName) {
                 name: item.name,
                 unit: item.unit,
                 cost: item.cost
-            }))
+            })),
+            updatedAt: now
         };
         
         db.specs[selectedProjectId].push(newSpec);
+        markChanged('specs', selectedProjectId);
         selectedSpecId = newSpec.id;
         // Раскрываем проект при копировании спецификации
         expandedProjects.add(selectedProjectId);
@@ -371,6 +377,7 @@ function deleteSpec(specId) {
     }
     
     specs.splice(idx, 1);
+    markChanged('specs', selectedProjectId); // Спецификации хранятся как объект по projectId
     
     if(selectedSpecId === specId) {
         selectedSpecId = null;
@@ -419,6 +426,8 @@ function addCustomItem() {
         qty: qty,
         cost: cost
     });
+    s.updatedAt = Date.now();
+    markChanged('specs', selectedProjectId);
     
     // Логирование
     if (typeof logActivity === 'function') {
@@ -780,6 +789,8 @@ function remSpecItem(idx) {
     if(!confirm("Удалить позицию?")) return;
     const s = db.specs[selectedProjectId].find(x => x.id === selectedSpecId);
     s.items.splice(idx, 1);
+    s.updatedAt = Date.now();
+    markChanged('specs', selectedProjectId);
     save();
     loadSpec(selectedSpecId);
 }
@@ -811,6 +822,8 @@ function updateSpecName(newName) {
     }
     
     spec.name = trimmedName;
+    spec.updatedAt = Date.now();
+    markChanged('specs', selectedProjectId);
     save();
     renderSpecProjectList(); // Обновляем список проектов, чтобы отобразить новое название
     showToast("Название обновлено");
@@ -835,6 +848,8 @@ function updateSpecQuantity(rawValue) {
     const spec = specList.find(x => x.id === selectedSpecId);
     if(!spec) return;
     spec.quantity = quantity;
+    spec.updatedAt = Date.now();
+    markChanged('specs', selectedProjectId);
     save();
     loadSpec(selectedSpecId);
 }
@@ -863,6 +878,8 @@ function updateSpecItemQty(idx, rawValue) {
     const spec = specList.find(x => x.id === selectedSpecId);
     if(!spec || !spec.items[idx]) return;
     spec.items[idx].qty = qty;
+    spec.updatedAt = Date.now();
+    markChanged('specs', selectedProjectId);
     save();
     loadSpec(selectedSpecId);
 }
@@ -894,6 +911,8 @@ function updateSpecItemCost(idx, rawValue) {
     // Обновляем стоимость только для нестандартных изделий
     if(spec.items[idx].isCustom) {
         spec.items[idx].cost = cost;
+        spec.updatedAt = Date.now();
+        markChanged('specs', selectedProjectId);
         save();
         loadSpec(selectedSpecId);
     } else {
@@ -926,24 +945,35 @@ function commitSpec() {
     
     if(err) return alert(err);
     
+    const now = Date.now();
+    let movCounter = 0;
+    
     s.items.forEach(r => {
         if(!r.isCustom) {
             const i = db.items.find(x => x.id === r.itemId);
             // Рассчитываем итоговое количество с учетом количества спецификации
             const finalQty = r.qty * specQuantity;
             i.qty -= finalQty;
+            i.updatedAt = now;
+            markChanged('items', i.id);
+            
+            const movId = 'mov_' + now + '_' + movCounter++;
             db.movements.unshift({
-                id: 'mov_' + Date.now(), 
+                id: movId, 
                 date: new Date().toLocaleString(), 
                 type: 'out', 
                 itemId: i.id, 
                 itemName: `${i.name} (В проект ${db.projects.find(p=>p.id===selectedProjectId).name}, кол-во: ${specQuantity})`, 
-                qty: finalQty
-            }); 
+                qty: finalQty,
+                updatedAt: now
+            });
+            markChanged('movements', movId);
         }
     });
     
     s.status = 'committed';
+    s.updatedAt = now;
+    markChanged('specs', selectedProjectId);
     
     // Логирование
     const project = db.projects.find(p => p.id === selectedProjectId);
@@ -1147,6 +1177,8 @@ function addToSpec() {
     } else {
         s.items.push({itemId:parseInt(iid), qty:qty}); 
     }
+    s.updatedAt = Date.now();
+    markChanged('specs', selectedProjectId);
     
     // Логирование
     if (typeof logActivity === 'function') {

@@ -2,6 +2,57 @@
 let db = { items: [], projects: [], specs: {}, movements: [] };
 let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null, hasUnsavedChanges = false;
 let selectedItems = new Set(); // Множество выбранных товаров для массового удаления
+
+// --- INCREMENTAL SYNC: Отслеживание изменений для инкрементальной синхронизации ---
+let pendingChanges = {
+    items: { updated: new Set(), deleted: new Set() },
+    projects: { updated: new Set(), deleted: new Set() },
+    specs: { updated: new Set(), deleted: new Set() },
+    movements: { updated: new Set(), deleted: new Set() },
+    users: { updated: new Set(), deleted: new Set() }, // Для синхронизации пользователей
+    rolePermissions: false, // true = нужно синхронизировать всю структуру
+    activityLogs: false // true = нужно синхронизировать весь массив
+};
+
+// Вспомогательные функции для отслеживания изменений
+function markChanged(collection, id) {
+    if (pendingChanges[collection]) {
+        pendingChanges[collection].updated.add(String(id));
+        // Если элемент был ранее удалён, убираем из deleted
+        pendingChanges[collection].deleted.delete(String(id));
+    }
+}
+
+function markDeleted(collection, id) {
+    if (pendingChanges[collection]) {
+        pendingChanges[collection].deleted.add(String(id));
+        // Убираем из updated, т.к. элемент удалён
+        pendingChanges[collection].updated.delete(String(id));
+    }
+}
+
+function clearPendingChanges() {
+    pendingChanges = {
+        items: { updated: new Set(), deleted: new Set() },
+        projects: { updated: new Set(), deleted: new Set() },
+        specs: { updated: new Set(), deleted: new Set() },
+        movements: { updated: new Set(), deleted: new Set() },
+        users: { updated: new Set(), deleted: new Set() },
+        rolePermissions: false,
+        activityLogs: false
+    };
+}
+
+function hasPendingChanges() {
+    for (const [key, collection] of Object.entries(pendingChanges)) {
+        if (key === 'rolePermissions' || key === 'activityLogs') {
+            if (collection === true) return true;
+        } else if (collection.updated && (collection.updated.size > 0 || collection.deleted.size > 0)) {
+            return true;
+        }
+    }
+    return false;
+}
 let massSelectionEnabled = false;
 let deleteProjectsEnabled = false;
 let expandedProjects = new Set(); // Множество раскрытых проектов в дереве спецификаций
@@ -14,6 +65,16 @@ let totalPages = 1;
 let sortState = {
     warehouse: { key: 'id', dir: 'desc' },
     projects: { key: 'num', dir: 'desc' }
+};
+
+// --- UI CUSTOMIZATION SETTINGS ---
+// Object to store user UI preferences (persisted to localStorage)
+let userUISettings = {
+    categoryPanelPosition: 'left' // 'left' or 'right'
+    // Future settings can be added here:
+    // compactMode: false,
+    // tableColumnOrder: [],
+    // etc.
 };
 
 // --- PERFORMANCE OPTIMIZATION ---
