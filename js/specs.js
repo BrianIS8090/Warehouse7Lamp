@@ -42,8 +42,9 @@ function renderSpecProjectList() {
             ? '<i class="fas fa-chevron-down text-xs text-slate-500"></i>' 
             : '<i class="fas fa-chevron-right text-xs text-slate-500"></i>';
         
-        // Кнопка добавления спецификации (показывается только для выбранного проекта)
-        const addButton = isProjectSelected 
+        // Кнопка добавления спецификации (показывается только для выбранного проекта и при наличии прав)
+        const canCreateSpec = typeof hasPermission === 'function' ? hasPermission('specs', 'create') : true;
+        const addButton = (isProjectSelected && canCreateSpec)
             ? `<button onclick="event.stopPropagation(); addNewSpecToProject()" class="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors flex-shrink-0" title="Добавить спецификацию">
                 <i class="fas fa-plus"></i>
             </button>`
@@ -87,6 +88,9 @@ function renderProjectSpecs(projectId, specs) {
         `;
     }
     
+    // Проверяем права на удаление спецификаций
+    const canDeleteSpec = typeof hasPermission === 'function' ? hasPermission('specs', 'delete') : true;
+    
     let html = '<div class="pl-7 pr-3 py-2 space-y-1">';
     
     specs.forEach(s => {
@@ -98,6 +102,12 @@ function renderProjectSpecs(projectId, specs) {
             ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-500'
             : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:shadow';
         
+        const deleteBtn = canDeleteSpec 
+            ? `<button onclick="event.stopPropagation(); deleteSpec('${s.id}')" class="text-slate-400 hover:text-red-500 flex-shrink-0" title="Удалить спецификацию">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>`
+            : '';
+        
         html += `
             <div onclick="selectSpecAndLoad('${projectId}', '${s.id}')" class="p-2 border rounded cursor-pointer transition-colors ${specClasses}">
                 <div class="flex justify-between items-center gap-2">
@@ -105,9 +115,7 @@ function renderProjectSpecs(projectId, specs) {
                         ${ic}
                         <span class="text-sm font-medium truncate">${s.name}</span>
                     </div>
-                    <button onclick="event.stopPropagation(); deleteSpec('${s.id}')" class="text-slate-400 hover:text-red-500 flex-shrink-0" title="Удалить спецификацию">
-                        <i class="fas fa-trash text-xs"></i>
-                    </button>
+                    ${deleteBtn}
                 </div>
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 ml-5">Позиций: ${s.items.length}</div>
             </div>
@@ -167,6 +175,12 @@ function addNewSpecToProject() {
 }
 
 function openCreateNewSpec() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'create')) {
+        showToast('Нет прав на создание спецификаций');
+        return;
+    }
+    
     closeModal('addSpecModal');
     try { 
         const n = prompt("Введите название спецификации (например: Электрика 1 этаж):"); 
@@ -192,6 +206,15 @@ function openCreateNewSpec() {
         selectedSpecId = newSpec.id; 
         // Раскрываем проект при создании спецификации
         expandedProjects.add(selectedProjectId);
+        
+        // Логирование
+        const project = db.projects.find(p => p.id === selectedProjectId);
+        if (typeof logActivity === 'function') {
+            logActivity('spec_create', 'spec', newSpec.id, n, {
+                project: project ? project.name : ''
+            });
+        }
+        
         save(); 
         showToast("Спецификация создана"); 
         loadSpec(newSpec.id); 
@@ -320,6 +343,12 @@ function copySpecToProject(sourceSpec, sourceProjectId, sourceProjectName) {
 }
 
 function deleteSpec(specId) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'delete')) {
+        showToast('Нет прав на удаление спецификаций');
+        return;
+    }
+    
     if(!selectedProjectId) return;
     const specs = (db.specs || {})[selectedProjectId] || [];
     const idx = specs.findIndex(s => s.id === specId);
@@ -331,6 +360,15 @@ function deleteSpec(specId) {
         : `Удалить спецификацию "${spec.name}"?`;
     
     if(!confirm(message)) return;
+    
+    // Логирование перед удалением
+    const project = db.projects.find(p => p.id === selectedProjectId);
+    if (typeof logActivity === 'function') {
+        logActivity('spec_delete', 'spec', specId, spec.name, {
+            project: project ? project.name : '',
+            itemsCount: spec.items.length
+        });
+    }
     
     specs.splice(idx, 1);
     
@@ -359,6 +397,12 @@ function closeAddCustomItemModal() {
 }
 
 function addCustomItem() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        return;
+    }
+    
     if(!selectedSpecId || !selectedProjectId) return;
     const name = document.getElementById('customName').value;
     const unit = document.getElementById('customUnit').value;
@@ -375,6 +419,16 @@ function addCustomItem() {
         qty: qty,
         cost: cost
     });
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('spec_edit', 'spec', selectedSpecId, s.name, {
+            action: 'add_custom_item',
+            itemName: name,
+            qty: qty,
+            cost: cost
+        });
+    }
     
     save();
     closeModal('addCustomItemModal');
@@ -404,12 +458,19 @@ function loadSpec(sid) {
     document.getElementById('specEditor').classList.remove('hidden'); 
     document.getElementById('specContentPlaceholder').classList.add('hidden');
     
+    // Проверяем права на редактирование
+    const canEditSpec = typeof hasPermission === 'function' ? hasPermission('specs', 'edit') : true;
+    const canCommitSpec = typeof hasPermission === 'function' ? hasPermission('specs', 'commit') : true;
+    
+    // Определяем, можно ли редактировать (права + не закрыта)
+    const isEditable = canEditSpec && s.status !== 'committed';
+    
     // Устанавливаем название спецификации в поле ввода
     const specTitleInput = document.getElementById('specTitle');
     if (specTitleInput) {
         specTitleInput.value = s.name || '';
-        // Если спецификация закрыта, делаем поле только для чтения
-        if (s.status === 'committed') {
+        // Если спецификация закрыта или нет прав, делаем поле только для чтения
+        if (!isEditable) {
             specTitleInput.disabled = true;
             specTitleInput.classList.add('cursor-not-allowed', 'opacity-75');
         } else {
@@ -429,8 +490,8 @@ function loadSpec(sid) {
     const specQuantityInput = document.getElementById('specQuantity');
     if (specQuantityInput) {
         specQuantityInput.value = s.quantity || 1;
-        // Если спецификация закрыта, делаем поле только для чтения
-        if (s.status === 'committed') {
+        // Если спецификация закрыта или нет прав, делаем поле только для чтения
+        if (!isEditable) {
             specQuantityInput.disabled = true;
             specQuantityInput.classList.add('bg-slate-100', 'dark:bg-slate-600');
         } else {
@@ -439,12 +500,22 @@ function loadSpec(sid) {
         }
     }
     
+    // Управление видимостью кнопки списания и панели добавления
+    const btnCommit = document.getElementById('btnCommitSpec');
+    const addPanel = document.getElementById('specAddPanel');
+    
     if(s.status==='committed') { 
-        document.getElementById('btnCommitSpec').classList.add('hidden'); 
-        document.getElementById('specAddPanel').classList.add('hidden'); 
+        if(btnCommit) btnCommit.classList.add('hidden'); 
+        if(addPanel) addPanel.classList.add('hidden'); 
     } else { 
-        document.getElementById('btnCommitSpec').classList.remove('hidden'); 
-        document.getElementById('specAddPanel').classList.remove('hidden'); 
+        // Показываем кнопку списания только если есть право на commit
+        if(btnCommit) {
+            btnCommit.classList.toggle('hidden', !canCommitSpec);
+        }
+        // Показываем панель добавления только если есть право на редактирование
+        if(addPanel) {
+            addPanel.classList.toggle('hidden', !canEditSpec);
+        }
     }
     
     const tb = document.getElementById('specTableBody'); 
@@ -506,6 +577,8 @@ function loadSpec(sid) {
     let currentCategory = null;
 
     const isDraft = s.status === 'draft';
+    // Можно редактировать позиции только если есть права и спецификация не закрыта
+    const canEditItems = isEditable;
 
     itemsWithMeta.forEach((entry, idx) => { 
         const { name, unit, qty, cost, category, rowClass, originalIndex, isCustom } = entry;
@@ -513,10 +586,10 @@ function loadSpec(sid) {
         const finalQty = qty * specQuantity;
         const rowTotal = cost * finalQty;
         tot += rowTotal; 
-        // Показываем базовое количество в поле ввода, но отображаем итоговое количество
-        const qtyCell = isDraft
+        // Показываем поле ввода только если можно редактировать, иначе просто текст
+        const qtyCell = canEditItems
             ? `<input type="number" min="0" step="0.01" value="${formatNumber(qty)}" class="spec-qty-input w-20 text-center border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="updateSpecItemQty(${originalIndex}, this.value)" onclick="event.stopPropagation()" title="На единицу продукции">`
-            : formatNumber(finalQty);
+            : formatNumber(qty);
         const rowTotalDisplay = formatCurrency(rowTotal);
 
         if (category !== currentCategory) {
@@ -526,7 +599,8 @@ function loadSpec(sid) {
             </tr>`;
         }
         
-        const del = isDraft ? `<button onclick="event.stopPropagation(); remSpecItem(${originalIndex})" class="text-red-400"><i class="fas fa-trash"></i></button>` : ''; 
+        // Кнопка удаления только если можно редактировать
+        const del = canEditItems ? `<button onclick="event.stopPropagation(); remSpecItem(${originalIndex})" class="text-red-400"><i class="fas fa-trash"></i></button>` : ''; 
         const itemId = !isCustom ? s.items[originalIndex].itemId : null;
         // Обработчик клика только на название товара, а не на всю строку
         const itemNameClickHandler = itemId ? `onclick="openItemCardViewOnly(${itemId})" style="cursor: pointer;"` : '';
@@ -534,12 +608,12 @@ function loadSpec(sid) {
         // Отображаем общее количество (с учетом множителя спецификации)
         const totalQtyDisplay = formatNumber(finalQty);
         
-        // Для нестандартных изделий добавляем возможность редактирования стоимости
-        const costCell = isCustom && isDraft
+        // Для нестандартных изделий добавляем возможность редактирования стоимости (если есть права)
+        const costCell = isCustom && canEditItems
             ? `<input type="number" min="0" step="0.01" value="${formatNumber(cost)}" class="spec-cost-input w-24 text-right border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400" onchange="updateSpecItemCost(${originalIndex}, this.value)" onclick="event.stopPropagation()" title="Цена за единицу">`
             : rowTotalDisplay;
         
-        const costCellClass = isCustom && isDraft ? 'text-right' : 'text-right text-sm';
+        const costCellClass = isCustom && canEditItems ? 'text-right' : 'text-right text-sm';
         
         tb.innerHTML += `<tr class="border-b dark:border-slate-700 ${rowClass}">
             <td class="text-center text-sm px-2">${idx + 1}</td>
@@ -697,6 +771,12 @@ function clearSpecCategory() {
 }
 
 function remSpecItem(idx) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        return;
+    }
+    
     if(!confirm("Удалить позицию?")) return;
     const s = db.specs[selectedProjectId].find(x => x.id === selectedSpecId);
     s.items.splice(idx, 1);
@@ -705,6 +785,13 @@ function remSpecItem(idx) {
 }
 
 function updateSpecName(newName) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        loadSpec(selectedSpecId);
+        return;
+    }
+    
     if(!selectedProjectId || !selectedSpecId) return;
     const trimmedName = (newName || '').trim();
     if(!trimmedName) {
@@ -730,6 +817,13 @@ function updateSpecName(newName) {
 }
 
 function updateSpecQuantity(rawValue) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        loadSpec(selectedSpecId);
+        return;
+    }
+    
     if(!selectedProjectId || !selectedSpecId) return;
     const quantity = parseFloat(rawValue);
     if(isNaN(quantity) || quantity <= 0) {
@@ -746,6 +840,13 @@ function updateSpecQuantity(rawValue) {
 }
 
 function updateSpecItemQty(idx, rawValue) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        loadSpec(selectedSpecId);
+        return;
+    }
+    
     if(!selectedProjectId || !selectedSpecId) return;
     const qty = parseFloat(rawValue);
     if(isNaN(qty)) {
@@ -767,6 +868,13 @@ function updateSpecItemQty(idx, rawValue) {
 }
 
 function updateSpecItemCost(idx, rawValue) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        loadSpec(selectedSpecId);
+        return;
+    }
+    
     if(!selectedProjectId || !selectedSpecId) return;
     const cost = parseFloat(rawValue);
     if(isNaN(cost)) {
@@ -794,6 +902,12 @@ function updateSpecItemCost(idx, rawValue) {
 }
 
 function commitSpec() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'commit')) {
+        showToast('Нет прав на списание по спецификациям');
+        return;
+    }
+    
     if(!confirm("Списать материалы со склада? Это действие необратимо.")) return;
     const s = db.specs[selectedProjectId].find(x => x.id === selectedSpecId);
     
@@ -830,6 +944,17 @@ function commitSpec() {
     });
     
     s.status = 'committed';
+    
+    // Логирование
+    const project = db.projects.find(p => p.id === selectedProjectId);
+    if (typeof logActivity === 'function') {
+        logActivity('spec_commit', 'spec', s.id, s.name, {
+            project: project ? project.name : '',
+            itemsCount: s.items.length,
+            quantity: specQuantity
+        });
+    }
+    
     save();
     showToast("Материалы списаны");
     loadSpec(selectedSpecId);
@@ -1001,6 +1126,12 @@ function printSpec(includeCosts = true) {
 }
 
 function addToSpec() { 
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('specs', 'edit')) {
+        showToast('Нет прав на редактирование спецификаций');
+        return;
+    }
+    
     if(!selectedSpecId) return; 
     const itemInput = document.getElementById('specItemSearch');
     const iid = itemInput ? itemInput.dataset.itemId : null;
@@ -1015,6 +1146,16 @@ function addToSpec() {
         ex.qty += qty; 
     } else {
         s.items.push({itemId:parseInt(iid), qty:qty}); 
+    }
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        const item = db.items.find(i => i.id == iid);
+        logActivity('spec_edit', 'spec', selectedSpecId, s.name, {
+            action: 'add_item',
+            itemName: item ? item.name : '',
+            qty: qty
+        });
     }
     
     save(); 

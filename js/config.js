@@ -1,13 +1,14 @@
 // --- FIREBASE CONFIG ---
+// Конфигурация загружается из env.js (не коммитится в git)
 const firebaseConfig = {
-    apiKey: "AIzaSyChf2f13grceK8sjkPP7dKz6_1YP1RLkZE", 
-    authDomain: "warehouse7lamp.firebaseapp.com", 
-    databaseURL: "https://warehouse7lamp-default-rtdb.europe-west1.firebasedatabase.app", 
-    projectId: "warehouse7lamp", 
-    storageBucket: "warehouse7lamp.firebasestorage.app", 
-    messagingSenderId: "349274471054", 
-    appId: "1:349274471054:web:03302aeb9b42135ae5e7df", 
-    measurementId: "G-9NLYY972T8"
+    apiKey: ENV.FIREBASE_API_KEY, 
+    authDomain: ENV.FIREBASE_AUTH_DOMAIN, 
+    databaseURL: ENV.FIREBASE_DATABASE_URL, 
+    projectId: ENV.FIREBASE_PROJECT_ID, 
+    storageBucket: ENV.FIREBASE_STORAGE_BUCKET, 
+    messagingSenderId: ENV.FIREBASE_MESSAGING_SENDER_ID, 
+    appId: ENV.FIREBASE_APP_ID, 
+    measurementId: ENV.FIREBASE_MEASUREMENT_ID
 };
 
 let auth, dbRef, isDemoMode = false;
@@ -22,6 +23,9 @@ try {
     document.getElementById('loginError').innerHTML = "Ошибка инициализации Firebase.<br>Проверьте консоль (F12).<br>" + e.message; 
     document.getElementById('loginError').classList.remove('hidden'); 
 }
+
+
+
 
 
 

@@ -13,7 +13,16 @@ if (auth) {
                 userEmailText.classList.remove('hidden');
             }
 
-            init(false); 
+            init(false).then(() => {
+                // Инициализируем права пользователя после загрузки данных
+                if (typeof initUserPermissions === 'function') {
+                    initUserPermissions(user);
+                }
+                // Логируем вход
+                if (typeof logActivity === 'function') {
+                    logActivity('user_login', 'auth', user.uid, user.email, null);
+                }
+            }); 
         } else { 
             if(!isDemoMode) { 
                 document.getElementById('loginScreen').classList.remove('hidden'); 
@@ -66,17 +75,47 @@ function demoLogin() {
     
     const userEmailText = document.getElementById('userEmailText');
     if (userEmailText) {
-        userEmailText.textContent = "Demo User";
+        userEmailText.textContent = "Demo User (Админ)";
         userEmailText.classList.remove('hidden');
     }
 
-    showToast("Демо режим: данные не сохраняются в облако"); 
+    // Устанавливаем текущего пользователя для демо-режима
+    if (typeof initRolesData === 'function') {
+        initRolesData();
+    }
+    currentUser = {
+        id: 'demo_user',
+        email: 'demo@demo.ru',
+        name: 'Demo User',
+        role: 'admin',
+        isActive: true
+    };
+    // В демо-режиме даём полный доступ (currentPermissions будет установлен в applyPermissions)
+    currentPermissions = null;
+
+    showToast("Демо режим: данные не сохраняются в облако, полный доступ"); 
     seedData(); 
-    init(true); 
+    init(true).then(() => {
+        // В демо-режиме показываем все элементы UI
+        if (typeof applyPermissions === 'function') {
+            applyPermissions();
+        }
+        // Обновляем аватар
+        if (typeof updateUserAvatar === 'function') {
+            updateUserAvatar();
+        }
+    }); 
 }
 
 function logout() { 
     if(hasUnsavedChanges && !confirm("Есть несохраненные данные. Точно выйти?")) return; 
+    
+    // Логируем выход
+    if (typeof logActivity === 'function' && currentUser) {
+        logActivity('user_logout', 'auth', currentUser.id, currentUser.email, null);
+        save(false);
+    }
+    
     if (isDemoMode) { 
         isDemoMode = false; 
         location.reload(); 
@@ -84,6 +123,7 @@ function logout() {
         auth.signOut().then(() => location.reload()); 
     } 
 }
+
 
 
 

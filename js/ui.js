@@ -5,6 +5,12 @@ function openCreateItemModal() {
 }
 
 function createNewItem() { 
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('items', 'create')) {
+        showToast('Нет прав на создание товаров');
+        return;
+    }
+    
     const cost = parseFloat(document.getElementById('newItemCost').value) || 0;
     const i = { 
         id:Date.now(), 
@@ -38,6 +44,11 @@ function createNewItem() {
         }); 
     }
     
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('item_create', 'item', i.id, i.name, null);
+    }
+    
     save(); 
     closeModal('createItemModal'); 
 }
@@ -48,6 +59,12 @@ function openCreateProjectModal() {
 }
 
 function createNewProject() { 
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('projects', 'create')) {
+        showToast('Нет прав на создание проектов');
+        return;
+    }
+    
     const p = {
         id:Date.now(), 
         year:document.getElementById('newPrYear').value, 
@@ -58,12 +75,19 @@ function createNewProject() {
         start:document.getElementById('newPrStart').value, 
         end:document.getElementById('newPrEnd').value, 
         cost:parseFloat(document.getElementById('newPrCost').value)||0, 
+        file:document.getElementById('newPrFile').value || '',
         status:'active'
     }; 
     
     if(!p.name)return; 
     db.projects.push(p); 
     db.specs[p.id]=[]; 
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('project_create', 'project', p.id, p.name, null);
+    }
+    
     save(); 
     closeModal('createProjectModal'); 
     renderProjects(); 
@@ -212,6 +236,11 @@ function updateCardPreview() {
 }
 
 function deleteItemFromCard() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('items', 'delete')) {
+        return showToast("Нет прав на удаление товаров");
+    }
+    
     if (!massSelectionEnabled) {
         return showToast("Удаление отключено в настройках");
     }
@@ -243,6 +272,11 @@ function deleteItemFromCard() {
 
     const idx = db.items.indexOf(item);
     if (idx > -1) {
+        // Логирование
+        if (typeof logActivity === 'function') {
+            logActivity('item_delete', 'item', item.id, item.name, null);
+        }
+        
         db.items.splice(idx, 1);
         // Удаляем товар из выбранных, если он был выбран
         selectedItems.delete(item.id);
@@ -254,9 +288,18 @@ function deleteItemFromCard() {
 }
 
 function saveItemFromCard() { 
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('items', 'edit')) {
+        showToast('Нет прав на редактирование товаров');
+        return;
+    }
+    
     const itemId = parseInt(document.getElementById('cardId').value);
     const i = db.items.find(x => x.id === itemId); 
     if (!i) return;
+    
+    // Сохраняем старые значения для логирования
+    const oldItem = { ...i };
     
     // Show saving indicator - find button in modal
     const modal = document.getElementById('itemCardModal');
@@ -288,6 +331,14 @@ function saveItemFromCard() {
     i.chars = document.getElementById('cardChars').value; 
     i.img = document.getElementById('cardImg').value; 
     i.file = document.getElementById('cardFile').value; 
+    
+    // Логирование
+    if (typeof logActivity === 'function' && typeof trackChanges === 'function') {
+        const changes = trackChanges(oldItem, i, ['name', 'manuf', 'cat', 'cost', 'unit', 'chars']);
+        if (changes) {
+            logActivity('item_edit', 'item', i.id, i.name, changes);
+        }
+    }
     
     // Save without full refresh
     save(false);
@@ -353,12 +404,6 @@ function closeModal(id) {
     }, 300); // Время анимации
 }
 function openSettings() { 
-    const user = auth ? auth.currentUser : null;
-    if (!user || user.email !== 'is8090@mail.ru') {
-        alert("Доступ к настройкам разрешен только для администратора (is8090@mail.ru)");
-        return;
-    }
-
     const checkbox = document.getElementById('settingMassSelect');
     if (checkbox) {
         checkbox.checked = massSelectionEnabled;
@@ -369,7 +414,116 @@ function openSettings() {
         deleteProjectsCheckbox.checked = deleteProjectsEnabled;
     }
     
+    // Показываем/скрываем админ-раздел в зависимости от прав
+    const adminSection = document.getElementById('adminSection');
+    if (adminSection) {
+        const canManage = isDemoMode || (typeof hasPermission === 'function' && hasPermission('manageUsers'));
+        adminSection.classList.toggle('hidden', !canManage);
+    }
+    
     openModal('settingsModal'); 
+}
+
+function openUserProfile() {
+    if (!currentUser) {
+        showToast('Пользователь не авторизован');
+        return;
+    }
+    
+    // Заполняем форму данными пользователя
+    document.getElementById('profileEmail').value = currentUser.email || '';
+    document.getElementById('profileName').value = currentUser.name || currentUser.email || '';
+    
+    // Отображаем роль
+    const roleName = typeof ROLE_NAMES !== 'undefined' && currentUser.role ? ROLE_NAMES[currentUser.role] : 'Не назначена';
+    document.getElementById('profileRole').value = roleName;
+    
+    // Обновляем аватар с инициалами
+    updateUserAvatar();
+    
+    openModal('userProfileModal');
+}
+
+function saveUserProfile() {
+    if (!currentUser || !currentUser.id) {
+        showToast('Ошибка: пользователь не найден');
+        return;
+    }
+    
+    const newName = document.getElementById('profileName').value.trim();
+    if (!newName) {
+        showToast('Введите имя');
+        return;
+    }
+    
+    initRolesData();
+    
+    // Сохраняем старое имя для логирования
+    const oldName = currentUser.name;
+    
+    // Обновляем имя в БД
+    if (db.users && db.users[currentUser.id]) {
+        db.users[currentUser.id].name = newName;
+        db.users[currentUser.id].updatedAt = new Date().toISOString();
+        
+        // Обновляем текущего пользователя
+        currentUser.name = newName;
+        
+        // Логируем изменение
+        if (typeof logActivity === 'function') {
+            logActivity('user_profile_update', 'user', currentUser.id, currentUser.email, {
+                name: { from: oldName, to: newName }
+            });
+        }
+        
+        save(false);
+        updateUserAvatar();
+        closeModal('userProfileModal');
+        showToast('Имя успешно обновлено');
+    } else {
+        showToast('Ошибка: пользователь не найден в базе данных');
+    }
+}
+
+function updateUserAvatar() {
+    if (!currentUser) return;
+    
+    // Получаем инициалы из имени или email
+    const name = currentUser.name || currentUser.email || 'U';
+    const initials = getInitials(name);
+    
+    // Обновляем аватар в header
+    const avatarBtn = document.getElementById('userProfileBtn');
+    const avatarInitials = document.getElementById('userAvatarInitials');
+    if (avatarBtn && avatarInitials) {
+        avatarInitials.textContent = initials;
+    }
+    
+    // Обновляем аватар в модальном окне
+    const profileAvatar = document.getElementById('profileAvatar');
+    const profileInitials = document.getElementById('profileAvatarInitials');
+    if (profileAvatar && profileInitials) {
+        profileInitials.textContent = initials;
+    }
+}
+
+function getInitials(name) {
+    if (!name) return 'U';
+    
+    // Если это email, берем первую букву до @
+    if (name.includes('@')) {
+        return name.charAt(0).toUpperCase();
+    }
+    
+    // Разбиваем имя на слова и берем первые буквы
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+        return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+    } else if (words.length === 1) {
+        return words[0].charAt(0).toUpperCase();
+    }
+    
+    return 'U';
 }
 
 function openProjectFile(url) {

@@ -310,16 +310,36 @@ function renderWarehouse() {
                 </td>
             ` : `<td class="hidden"></td>`;
             
+            // Проверяем права на приход/списание
+            // Для админа всегда разрешаем, даже если права еще не инициализированы
+            let canMoveIn = true;
+            let canMoveOut = true;
+            if (typeof hasPermission === 'function') {
+                canMoveIn = hasPermission('movements', 'in');
+                canMoveOut = hasPermission('movements', 'out');
+            } else if (typeof currentUser !== 'undefined' && currentUser?.role === 'admin') {
+                // Если функция hasPermission еще не доступна, но пользователь админ - разрешаем
+                canMoveIn = true;
+                canMoveOut = true;
+            } else if (typeof isDemoMode !== 'undefined' && isDemoMode) {
+                // В демо-режиме разрешаем все
+                canMoveIn = true;
+                canMoveOut = true;
+            }
+            
+            const moveInBtn = canMoveIn ? `<button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
+                            <i class="fas fa-arrow-down text-xs"></i>
+                        </button>` : '';
+            const moveOutBtn = canMoveOut ? `<button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'out')" class="w-7 h-7 rounded bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 flex items-center justify-center" title="Списание">
+                            <i class="fas fa-arrow-up text-xs"></i>
+                        </button>` : '';
+            
             row.innerHTML = `
                 ${checkboxCell}
                 <td class="px-2 py-3 text-center">
                     <div class="flex gap-1 justify-center">
-                        <button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
-                            <i class="fas fa-arrow-down text-xs"></i>
-                        </button>
-                        <button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'out')" class="w-7 h-7 rounded bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 flex items-center justify-center" title="Списание">
-                            <i class="fas fa-arrow-up text-xs"></i>
-                        </button>
+                        ${moveInBtn}
+                        ${moveOutBtn}
                     </div>
                 </td>
                 <td class="px-4 py-3 text-center">${img}</td>
@@ -541,6 +561,18 @@ function deleteSelectedItems() {
 
 // --- QUICK MOVE LOGIC ---
 function openQuickMove(id, type) {
+    // Проверка прав
+    if (typeof hasPermission === 'function') {
+        if (type === 'in' && !hasPermission('movements', 'in')) {
+            showToast('Нет прав на проведение прихода');
+            return;
+        }
+        if (type === 'out' && !hasPermission('movements', 'out')) {
+            showToast('Нет прав на проведение списания');
+            return;
+        }
+    }
+    
     const item = db.items.find(i => i.id === id);
     if(!item) return;
 
@@ -563,11 +595,25 @@ function saveQuickMove() {
     const type = document.getElementById('quickMoveType').value;
     const qty = parseFloat(document.getElementById('quickMoveQty').value);
     
+    // Проверка прав
+    if (typeof hasPermission === 'function') {
+        if (type === 'in' && !hasPermission('movements', 'in')) {
+            showToast('Нет прав на проведение прихода');
+            return;
+        }
+        if (type === 'out' && !hasPermission('movements', 'out')) {
+            showToast('Нет прав на проведение списания');
+            return;
+        }
+    }
+    
     if (!qty || qty <= 0) return alert('Введите количество!');
     
     const item = db.items.find(i => i.id === id);
     if(!item) return;
 
+    const oldQty = item.qty;
+    
     if (type === 'out') {
             if(item.qty < qty) return alert('Недостаточно товара на складе!');
             item.qty -= qty;
@@ -575,14 +621,24 @@ function saveQuickMove() {
             item.qty += qty;
     }
 
+    const movementId = 'mov_' + Date.now();
     db.movements.unshift({
-        id: 'mov_' + Date.now(),
+        id: movementId,
         date: new Date().toLocaleString(),
         type: type,
         itemId: item.id,
         itemName: item.name,
         qty: qty
     });
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        const actionType = type === 'in' ? 'movement_in' : 'movement_out';
+        logActivity(actionType, 'movement', movementId, item.name, {
+            qty: { from: oldQty, to: item.qty },
+            change: type === 'in' ? qty : -qty
+        });
+    }
     
     save();
     closeModal('quickMoveModal');

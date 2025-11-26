@@ -2,6 +2,7 @@
 
 async function init(force = false) { 
     showLoader(true); 
+    return new Promise(async (resolve) => {
     try { 
         if (!isDemoMode && dbRef) { 
             const snapshot = await dbRef.get(); 
@@ -89,7 +90,9 @@ async function init(force = false) {
         refreshAll(); 
     } finally { 
         showLoader(false); 
+        resolve();
     } 
+    });
 }
 
 async function syncWithCloud() { 

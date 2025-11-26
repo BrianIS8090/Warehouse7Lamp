@@ -118,6 +118,12 @@ function selectMovCategory(cat) {
 }
 
 function saveMovementIn() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('movements', 'in')) {
+        showToast('Нет прав на проведение прихода');
+        return;
+    }
+    
     const input = document.getElementById('movItemInput');
     const itemId = input?.dataset.itemId ? parseInt(input.dataset.itemId) : null;
     const qty = parseFloat(document.getElementById('movQty').value);
@@ -134,10 +140,12 @@ function saveMovementIn() {
         return;
     }
     
+    const oldQty = item.qty;
     item.qty += qty;
     
+    const movementId = 'mov_' + Date.now();
     db.movements.unshift({
-        id: 'mov_' + Date.now(), 
+        id: movementId, 
         date: new Date().toLocaleString(), 
         type: 'in', 
         itemId: item.id, 
@@ -145,6 +153,15 @@ function saveMovementIn() {
         qty,
         invoiceNumber: invoice || null
     }); 
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('movement_in', 'movement', movementId, item.name, {
+            qty: { from: oldQty, to: item.qty },
+            added: qty,
+            invoice: invoice || null
+        });
+    }
     
     save(); 
     showToast('Приход проведен'); 
@@ -157,6 +174,12 @@ function saveMovementIn() {
 }
 
 function saveMovementOut() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('movements', 'out')) {
+        showToast('Нет прав на проведение списания');
+        return;
+    }
+    
     const input = document.getElementById('movItemInput');
     const itemId = input?.dataset.itemId ? parseInt(input.dataset.itemId) : null;
     const qty = parseFloat(document.getElementById('movQty').value);
@@ -177,16 +200,26 @@ function saveMovementOut() {
         return;
     }
     
+    const oldQty = item.qty;
     item.qty -= qty;
     
+    const movementId = 'mov_' + Date.now();
     db.movements.unshift({
-        id: 'mov_' + Date.now(), 
+        id: movementId, 
         date: new Date().toLocaleString(), 
         type: 'out', 
         itemId: item.id, 
         itemName: item.name, 
         qty
     }); 
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('movement_out', 'movement', movementId, item.name, {
+            qty: { from: oldQty, to: item.qty },
+            removed: qty
+        });
+    }
     
     save(); 
     showToast('Списание проведено'); 
@@ -199,6 +232,12 @@ function saveMovementOut() {
 }
 
 function undoMovement(mid) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('movements', 'undo')) {
+        showToast('Нет прав на отмену операций');
+        return;
+    }
+    
     if(!confirm("Отменить эту операцию? Товар вернется на склад.")) return;
     
     const idx = db.movements.findIndex(m => m.id === mid);
@@ -208,6 +247,7 @@ function undoMovement(mid) {
     const item = db.items.find(i => i.id === m.itemId);
     
     if(item) {
+        const oldQty = item.qty;
         if (m.type === 'in') {
             if(item.qty < m.qty) {
                     if(!confirm("Внимание! При отмене прихода остаток станет отрицательным. Продолжить?")) return;
@@ -215,6 +255,15 @@ function undoMovement(mid) {
             item.qty -= m.qty;
         } else {
             item.qty += m.qty;
+        }
+        
+        // Логирование
+        if (typeof logActivity === 'function') {
+            logActivity('movement_undo', 'movement', mid, m.itemName, {
+                originalType: m.type,
+                qty: { from: oldQty, to: item.qty },
+                undoneQty: m.qty
+            });
         }
     }
     
@@ -250,6 +299,7 @@ function renderDatalists() {
     dl.innerHTML = ''; 
     (db.items || []).forEach(i => dl.innerHTML += `<option value="${i.name}">Ост: ${formatNumber(i.qty)}</option>`); 
 }
+
 
 
 

@@ -67,6 +67,12 @@ function renderProjects() {
 }
 
 function closeProject(pid) { 
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('projects', 'close')) {
+        showToast('Нет прав на закрытие проектов');
+        return;
+    }
+    
     const p = db.projects.find(x => x.id === pid); 
     if(!confirm(`Закрыть проект "${p.name}"?`)) return; 
     
@@ -102,6 +108,14 @@ function closeProject(pid) {
     }); 
     
     p.status = 'closed'; 
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('project_close', 'project', p.id, p.name, {
+            specsCommitted: drafts.length
+        });
+    }
+    
     save(); 
     showToast('Проект закрыт'); 
 }
@@ -234,9 +248,18 @@ function openProjectCard(id) {
 }
 
 function saveProjectFromCard() { 
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('projects', 'edit')) {
+        showToast('Нет прав на редактирование проектов');
+        return;
+    }
+    
     const id = parseInt(document.getElementById('pcId').value); 
     const p = db.projects.find(x => x.id === id); 
     if(p) { 
+        // Сохраняем старые значения для логирования
+        const oldProject = { ...p };
+        
         p.year = document.getElementById('pcYear').value; 
         p.num = document.getElementById('pcNum').value; 
         p.name = document.getElementById('pcName').value; 
@@ -246,6 +269,15 @@ function saveProjectFromCard() {
         p.end = document.getElementById('pcEnd').value; 
         p.cost = parseFloat(document.getElementById('pcCost').value) || 0; 
         p.file = document.getElementById('pcFile').value || ''; 
+        
+        // Логирование
+        if (typeof logActivity === 'function' && typeof trackChanges === 'function') {
+            const changes = trackChanges(oldProject, p, ['name', 'client', 'cost', 'start', 'end', 'status']);
+            if (changes) {
+                logActivity('project_edit', 'project', p.id, p.name, changes);
+            }
+        }
+        
         save(); 
         renderProjects(); 
         closeModal('projectCardModal'); 
@@ -254,6 +286,11 @@ function saveProjectFromCard() {
 }
 
 function deleteProjectFromCard() {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('projects', 'delete')) {
+        return showToast("Нет прав на удаление проектов");
+    }
+    
     if (!deleteProjectsEnabled) {
         return showToast("Удаление проектов отключено в настройках");
     }
@@ -276,6 +313,13 @@ function deleteProjectFromCard() {
     message += `\n\nЭто действие нельзя отменить.`;
 
     if(!confirm(message)) return;
+
+    // Логирование перед удалением
+    if (typeof logActivity === 'function') {
+        logActivity('project_delete', 'project', p.id, projectName, {
+            specsCount: specs.length
+        });
+    }
 
     // Удаляем проект из массива
     const projectIndex = db.projects.findIndex(x => x.id === id);
@@ -314,6 +358,7 @@ function switchProjectTab(tab) {
     document.getElementById(`pview-${tab}`).classList.remove('hidden'); 
     document.getElementById(`ptab-${tab}`).className = "modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600 font-bold cursor-pointer"; 
 }
+
 
 
 
