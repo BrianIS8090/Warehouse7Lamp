@@ -1,4 +1,5 @@
 // --- PROJECTS ---
+let projectSearchQuery = '';
 function setProjectSort(key) {
     if (sortState.projects.key === key) {
         sortState.projects.dir = sortState.projects.dir === 'asc' ? 'desc' : 'asc';
@@ -9,14 +10,43 @@ function setProjectSort(key) {
     renderProjects();
 }
 
-function renderProjects() { 
-    const tbody = document.getElementById('projectsTableBody'); 
-    tbody.innerHTML = ''; 
-    let sorted = [...(db.projects || [])];
-    
+function renderProjects() {
+    const tbody = document.getElementById('projectsTableBody');
+    tbody.innerHTML = '';
+    let filtered = [...(db.projects || [])];
+
+    // Фильтрация по поисковому запросу
+    if (projectSearchQuery) {
+        filtered = filtered.filter(p => {
+            const searchFields = [
+                p.name || '',
+                p.client || '',
+                p.desc || '',
+                p.num || '',
+                String(p.year || ''),
+                p.status || ''
+            ].join(' ').toLowerCase();
+            return searchFields.includes(projectSearchQuery);
+        });
+    }
+
+    // Обновляем счетчик результатов
+    const resultsCounter = document.getElementById('projectSearchResults');
+    if (resultsCounter) {
+        const totalCount = (db.projects || []).length;
+        const filteredCount = filtered.length;
+        if (projectSearchQuery) {
+            resultsCounter.textContent = `Найдено: ${filteredCount} из ${totalCount} проектов`;
+        } else {
+            resultsCounter.textContent = `Всего: ${totalCount} проектов`;
+        }
+    }
+
+    let sorted = [...filtered];
+
     const key = sortState.projects.key;
     const dir = sortState.projects.dir;
-    
+
     sorted.sort((a, b) => {
         let va = a[key];
         let vb = b[key];
@@ -376,9 +406,25 @@ function switchProjectTab(tab) {
     document.getElementById('pview-specs').classList.add('hidden'); 
     document.getElementById('ptab-info').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer"; 
     document.getElementById('ptab-specs').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer"; 
-    document.getElementById(`pview-${tab}`).classList.remove('hidden'); 
-    document.getElementById(`ptab-${tab}`).className = "modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600 font-bold cursor-pointer"; 
+    document.getElementById(`pview-${tab}`).classList.remove('hidden');
+    document.getElementById(`ptab-${tab}`).className = "modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600 font-bold cursor-pointer";
 }
+
+function filterProjects() {
+    const searchInput = document.getElementById('projectSearchInput');
+    projectSearchQuery = searchInput.value.toLowerCase().trim();
+    renderProjects();
+}
+
+function updateProjectSearchResults() {
+    const resultsCounter = document.getElementById('projectSearchResults');
+    if (resultsCounter) {
+        const totalCount = (db.projects || []).length;
+        resultsCounter.textContent = `Всего: ${totalCount} проектов`;
+    }
+}
+
+
 
 
 

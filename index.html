@@ -10,9 +10,63 @@
     
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style id="theme-colors">
+        :root {
+            /* Slate Palette */
+            --color-slate-50: #f8fafc;
+            --color-slate-100: #f1f5f9;
+            --color-slate-200: #e2e8f0;
+            --color-slate-300: #cbd5e1;
+            --color-slate-400: #94a3b8;
+            --color-slate-500: #64748b;
+            --color-slate-600: #475569;
+            --color-slate-700: #334155;
+            --color-slate-800: #1e293b;
+            --color-slate-900: #0f172a;
+
+            /* Blue Palette (Primary) */
+            --color-blue-50: #eff6ff;
+            --color-blue-100: #dbeafe;
+            --color-blue-400: #60a5fa;
+            --color-blue-500: #3b82f6;
+            --color-blue-600: #2563eb;
+            --color-blue-700: #1d4ed8;
+            --color-blue-800: #1e40af;
+            
+            /* Base */
+            --color-white: #ffffff;
+            --color-black: #000000;
+        }
+    </style>
     <script>
         tailwind.config = {
             darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            50: 'var(--color-slate-50)',
+                            100: 'var(--color-slate-100)',
+                            200: 'var(--color-slate-200)',
+                            300: 'var(--color-slate-300)',
+                            400: 'var(--color-slate-400)',
+                            500: 'var(--color-slate-500)',
+                            600: 'var(--color-slate-600)',
+                            700: 'var(--color-slate-700)',
+                            800: 'var(--color-slate-800)',
+                            900: 'var(--color-slate-900)',
+                        },
+                        blue: {
+                            50: 'var(--color-blue-50)',
+                            100: 'var(--color-blue-100)',
+                            500: 'var(--color-blue-500)',
+                            600: 'var(--color-blue-600)',
+                            700: 'var(--color-blue-700)',
+                        },
+                        white: 'var(--color-white)',
+                    }
+                }
+            }
         }
     </script>
     
@@ -89,6 +143,9 @@
                             <button onclick="switchTab('specs'); closeDropdownMenu();" id="menu-tab-specs" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-2">
                                 <i class="fas fa-file-invoice"></i> Спецификации
                             </button>
+                            <button onclick="switchTab('commercial'); closeDropdownMenu();" id="menu-tab-commercial" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-2">
+                                <i class="fas fa-briefcase"></i> Коммерческий отдел
+                            </button>
                             <button onclick="switchTab('help'); closeDropdownMenu();" id="menu-tab-help" class="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition flex items-center gap-2">
                                 <i class="fas fa-question-circle"></i> Помощь
                             </button>
@@ -98,13 +155,13 @@
                     <button onclick="switchTab('warehouse')" id="tab-warehouse" class="tab-btn active h-full px-1 flex items-center font-medium transition">Склад</button>
                     <button onclick="switchTab('projects')" id="tab-projects" class="tab-btn h-full px-1 flex items-center font-medium transition">Проекты</button>
                     <button onclick="switchTab('specs')" id="tab-specs" class="tab-btn h-full px-1 flex items-center font-medium transition">Спецификации</button>
-                    <button onclick="switchTab('help')" id="tab-help" class="tab-btn h-full px-1 flex items-center font-medium transition"><i class="fas fa-question-circle mr-2"></i>Помощь</button>
+                    <button onclick="switchTab('commercial')" id="tab-commercial" class="tab-btn h-full px-1 flex items-center font-medium transition">Коммерческий</button>
                 </nav>
                  <nav class="flex space-x-4 h-full md:hidden">
                     <button onclick="switchTab('dashboard')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-chart-pie"></i></button>
                     <button onclick="switchTab('warehouse')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-boxes"></i></button>
                     <button onclick="switchTab('specs')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-file-invoice"></i></button>
-                    <button onclick="switchTab('help')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-question-circle"></i></button>
+                    <button onclick="switchTab('commercial')" class="text-slate-600 dark:text-slate-300"><i class="fas fa-briefcase"></i></button>
                 </nav>
                 <div class="flex items-center gap-2">
                     <button onclick="openUserProfile()" id="userProfileBtn" class="w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition flex items-center justify-center font-bold text-sm shadow-md" title="Личный кабинет">
@@ -321,9 +378,19 @@
         <!-- PROJECTS -->
         <div id="view-projects" class="view-section h-full hidden p-4 flex flex-col">
             <div class="bg-white dark:bg-slate-800 rounded-lg shadow h-full flex flex-col transition-colors">
-                <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center shrink-0">
-                    <h2 class="font-bold text-lg text-slate-800 dark:text-white">Реестр проектов</h2>
-                    <button onclick="openCreateProjectModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Проект</button>
+                <div class="p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-bold text-lg text-slate-800 dark:text-white">Реестр проектов</h2>
+                        <button onclick="openCreateProjectModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Проект</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 max-w-md">
+                            <input id="projectSearchInput" type="text" placeholder="Поиск проектов..." class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors" oninput="filterProjects()">
+                        </div>
+                        <div class="text-sm text-slate-500 dark:text-slate-400">
+                            <span id="projectSearchResults">Найдено: 0 проектов</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="overflow-auto flex-1">
                     <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300">
@@ -407,6 +474,138 @@
                     </div>
                 </div>
                 <div id="specContentPlaceholder" class="flex items-center justify-center h-full text-slate-400 text-sm">Выберите спецификацию</div>
+            </div>
+        </div>
+
+        <!-- COMMERCIAL -->
+        <div id="view-commercial" class="view-section h-full hidden p-4 gap-4 flex flex-col md:flex-row">
+            <!-- Left Panel: Requests Tree -->
+            <div class="w-full md:w-1/4 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-col h-1/3 md:h-auto transition-colors">
+                <div class="p-3 border-b dark:border-slate-600 flex justify-between items-center bg-slate-50 dark:bg-slate-700 rounded-t-lg">
+                    <h3 class="font-bold text-slate-700 dark:text-slate-300 text-sm">Запросы</h3>
+                    <button onclick="openCreateCommercialRequestModal()" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div id="commercialTreeContainer" class="overflow-y-auto flex-1 pr-1"></div>
+            </div>
+            
+            <!-- Center Panel: Request Editor -->
+            <div class="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-col p-4 relative h-1/3 md:h-auto transition-colors">
+                
+                <!-- Request Editor -->
+                <div id="commercialEditor" class="hidden flex flex-col h-full">
+                    <input type="hidden" id="crId">
+                    <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                        <div class="flex items-center gap-3">
+                            <h2 class="font-bold text-lg text-slate-800 dark:text-white">Карточка запроса</h2>
+                            <span id="crStatus"></span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="openCompanySettingsModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-600" title="Реквизиты компании">
+                                <i class="fas fa-building"></i>
+                            </button>
+                            <button id="btnConvertToProject" onclick="convertRequestToProject()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700">
+                                <i class="fas fa-exchange-alt mr-1"></i> В проект
+                            </button>
+                            <button onclick="deleteCommercialRequest()" class="bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 px-3 py-1.5 rounded text-xs hover:bg-red-200 dark:hover:bg-red-800">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="lbl">Год</label>
+                            <input type="number" id="crYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="autoSaveCommercialRequest()">
+                        </div>
+                        <div>
+                            <label class="lbl">Номер запроса</label>
+                            <input type="text" id="crNumber" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="autoSaveCommercialRequest()">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="lbl">Название</label>
+                            <input type="text" id="crName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="autoSaveCommercialRequest()">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="lbl">Заказчик</label>
+                            <input type="text" id="crClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="autoSaveCommercialRequest()">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="lbl">Описание</label>
+                            <textarea id="crDescription" rows="3" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="autoSaveCommercialRequest()"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Proposals Section -->
+                    <div class="flex-1 border-t dark:border-slate-700 pt-4 overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300">Коммерческие предложения</h3>
+                            <button onclick="openAddProposalModal()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                                <i class="fas fa-plus mr-1"></i> Добавить КП
+                            </button>
+                        </div>
+                        <div id="proposalsListContainer" class="overflow-y-auto flex-1"></div>
+                    </div>
+                </div>
+                
+                <!-- Proposal Editor -->
+                <div id="proposalEditor" class="hidden flex flex-col h-full">
+                    <input type="hidden" id="proposalRequestId">
+                    <input type="hidden" id="proposalId">
+                    
+                    <div class="flex justify-between items-center mb-4 border-b dark:border-slate-700 pb-3">
+                        <div class="flex items-center gap-2">
+                            <button onclick="loadCommercialRequestEditor(document.getElementById('proposalRequestId').value)" class="text-slate-500 hover:text-blue-600">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 class="font-bold text-lg text-slate-800 dark:text-white" id="proposalTitle">КП</h2>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="printCommercialProposal(document.getElementById('proposalRequestId').value, document.getElementById('proposalId').value)" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-600">
+                                <i class="fas fa-print mr-1"></i> Печать
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Add Light Panel -->
+                    <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg mb-4 flex gap-2 items-center">
+                        <button onclick="openAddLightModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i> Добавить светильник
+                        </button>
+                    </div>
+                    
+                    <!-- Lights Table -->
+                    <div class="overflow-auto flex-1 border dark:border-slate-700 rounded-lg">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-500 dark:text-slate-400 uppercase bg-slate-50 dark:bg-slate-700 sticky top-0">
+                                <tr>
+                                    <th class="px-2 py-2 text-center w-10">№</th>
+                                    <th class="px-4 py-2">Наименование</th>
+                                    <th class="px-4 py-2 text-center w-24">Кол-во</th>
+                                    <th class="px-4 py-2 text-right w-28">Цена</th>
+                                    <th class="px-4 py-2 text-right w-28">Сумма</th>
+                                    <th class="px-4 py-2 text-center w-28">Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lightsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700 text-slate-700 dark:text-slate-300"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="pt-3 mt-3 flex justify-start border-t dark:border-slate-700">
+                        <div class="bg-blue-50 dark:bg-slate-700 text-blue-900 dark:text-blue-200 px-4 py-2 rounded-lg border border-blue-100 dark:border-slate-600 font-bold">
+                            Итого: <span id="proposalTotalPrice">0 ₽</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Placeholder -->
+                <div id="commercialPlaceholder" class="flex items-center justify-center h-full text-slate-400 text-sm">
+                    <div class="text-center">
+                        <i class="fas fa-briefcase text-4xl mb-3 block"></i>
+                        Выберите запрос или создайте новый
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -545,9 +744,9 @@
 
     <!-- MODALS -->
     <div id="projectDetailsModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="pdTitle">История</h3><button onclick="closeModal('projectDetailsModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1 text-slate-600 dark:text-slate-300" id="pdContent"></div></div></div>
-    <div id="itemCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6 text-slate-700 dark:text-slate-300"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500 dark:bg-slate-600 dark:text-slate-400 dark:border-slate-600" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><div class="flex items-center gap-2"><input id="cardCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white flex-1" type="number"><span id="cardPriceChangeDate" class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"></span></div></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div class="md:col-span-2"><img id="cardImgPreview" src="" class="w-full h-64 object-contain mb-3 rounded-lg border border-slate-200 bg-slate-50 hidden"><label class="lbl">Фото URL</label><input id="cardImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..." oninput="updateCardPreview()"></div><div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div class="mt-8 flex justify-between"><button onclick="deleteItemFromCard()" class="text-red-500 hover:text-red-700 font-bold px-4 py-3 transition"><i class="fas fa-trash mr-2"></i>Удалить</button><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Операции</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th><th class="p-2">Накладная</th></tr></thead><tbody id="cardMovHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Проекты</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div></div></div></div></div>
+    <div id="itemCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[60]"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6 text-slate-700 dark:text-slate-300"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500 dark:bg-slate-600 dark:text-slate-400 dark:border-slate-600" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><div class="flex items-center gap-2"><input id="cardCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white flex-1" type="number"><span id="cardPriceChangeDate" class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"></span></div></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div class="md:col-span-2"><img id="cardImgPreview" src="" class="w-full h-64 object-contain mb-3 rounded-lg border border-slate-200 bg-slate-50 hidden"><label class="lbl">Фото URL</label><input id="cardImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..." oninput="updateCardPreview()"></div><div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div class="mt-8 flex justify-between"><button onclick="deleteItemFromCard()" class="text-red-500 hover:text-red-700 font-bold px-4 py-3 transition"><i class="fas fa-trash mr-2"></i>Удалить</button><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Операции</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th><th class="p-2">Накладная</th></tr></thead><tbody id="cardMovHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Проекты</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div></div></div></div></div>
     <div id="createItemModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div class="col-span-2 relative"><label class="lbl">Наименование</label><input id="newItemName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" oninput="handleNewItemNameSearch()" autocomplete="off"><div id="newItemNameResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border border-t-0 dark:border-slate-600 shadow-2xl max-h-48 overflow-auto rounded-b-lg text-sm z-30"></div><div id="newItemDuplicateWarning" class="hidden mt-1 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-600 dark:text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i><span id="newItemDuplicateText">Товар с таким названием уже существует</span></div></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newItemFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
-    <div id="createProjectModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div><label class="lbl">Год</label><input id="newPrYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newPrFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
+    <div id="createProjectModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div><label class="lbl">Год</label><input id="newPrYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="10"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newPrFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
     <div id="projectCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchProjectTab('info')" id="ptab-info" class="modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600">Основная информация</div><div onclick="switchProjectTab('specs')" id="ptab-specs" class="modal-tab px-2 py-1 text-slate-500">Спецификации</div></div><button onclick="closeModal('projectCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><input type="hidden" id="pcId"><div id="pview-info" class="space-y-4 text-slate-700 dark:text-slate-300"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Год</label><input id="pcYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Номер заявки</label><input id="pcNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div><label class="lbl">Наименование</label><input id="pcName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Описание</label><textarea id="pcDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="10"></textarea></div><div><label class="lbl">Заказчик</label><input id="pcClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Дата начала</label><input id="pcStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Срок сдачи</label><input id="pcEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div></div><div><label class="lbl">Бюджет (руб)</label><input id="pcCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Файл / Документ (URL)</label><input id="pcFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div><div class="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded border dark:border-slate-600 flex justify-between items-center"><span class="text-sm font-bold text-slate-500 dark:text-slate-400">Текущий статус:</span><span id="pcStatus" class="font-bold px-2 py-1 rounded text-sm"></span></div>                <div class="mt-6 flex justify-between pt-4 border-t dark:border-slate-700"><div><button id="btnDeleteProject" onclick="deleteProjectFromCard()" class="text-red-500 hover:text-red-700 font-bold px-4 py-3 transition hidden"><i class="fas fa-trash mr-2"></i>Удалить проект</button></div><div class="flex"><button onclick="saveProjectFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow w-full sm:w-auto">Сохранить изменения</button></div>
                 </div></div><div id="pview-specs" class="hidden"><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-3">Состав проекта</h4><div class="overflow-hidden border dark:border-slate-700 rounded-lg"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="px-4 py-2">Название спецификации</th><th class="px-4 py-2 text-center">Статус</th><th class="px-4 py-2 text-center">Позиций</th><th class="px-4 py-2 text-right">Сумма</th></tr></thead><tbody id="pcSpecsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div class="mt-4 text-right font-bold text-lg text-slate-800 dark:text-white">Общая сумма: <span id="pcTotalSpecsCost">0 ₽</span></div></div></div></div></div>
 
@@ -770,6 +969,14 @@
                     </h4>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="movementsPermissions"></div>
                 </div>
+                
+                <!-- Коммерческий отдел -->
+                <div class="mb-6 p-4 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                    <h4 class="font-bold text-sm text-slate-600 dark:text-slate-300 mb-3 uppercase flex items-center gap-2">
+                        <i class="fas fa-briefcase text-indigo-500"></i> Коммерческий отдел
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3" id="commercialPermissions"></div>
+                </div>
             </div>
             <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-between">
                 <button onclick="resetRolePermissions()" class="text-orange-600 hover:text-orange-800 dark:text-orange-400 font-medium">
@@ -826,6 +1033,398 @@
                     </thead>
                     <tbody id="logsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Commercial Request Modal -->
+    <div id="createCommercialRequestModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg shadow-2xl transition-colors">
+            <div class="p-6">
+                <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый запрос</h3>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="lbl">Год</label>
+                        <input type="number" id="newCrYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="lbl">Номер запроса</label>
+                        <input type="text" id="newCrNumber" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="lbl">Название запроса</label>
+                        <input type="text" id="newCrName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Название проекта или объекта">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="lbl">Заказчик</label>
+                        <input type="text" id="newCrClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="lbl">Описание</label>
+                        <textarea id="newCrDescription" rows="3" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Краткое описание запроса"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal('createCommercialRequestModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                    <button onclick="createCommercialRequest()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Proposal Modal -->
+    <div id="addProposalModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-sm shadow-2xl transition-colors">
+            <div class="p-6">
+                <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новое КП</h3>
+                <input type="hidden" id="newProposalRequestId">
+                <div class="mb-4">
+                    <label class="lbl">Название КП</label>
+                    <input type="text" id="newProposalName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="КП-1">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal('addProposalModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                    <button onclick="createCommercialProposal()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Light Modal -->
+    <div id="addLightModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl transition-colors">
+            <div class="p-6">
+                <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Добавить светильник</h3>
+                <input type="hidden" id="newLightRequestId">
+                <input type="hidden" id="newLightProposalId">
+                <input type="hidden" id="editLightIdx" value="-1">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="lbl">Название светильника</label>
+                        <input type="text" id="newLightName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Светильник LED-100" oninput="updateLightDescriptionPreview()">
+                    </div>
+                    <div>
+                        <label class="lbl">Количество</label>
+                        <input type="number" id="newLightQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" value="1" min="1">
+                    </div>
+                    <div>
+                        <label class="lbl">Габариты (ДхШхВ), мм</label>
+                        <input type="text" id="newLightDimensions" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="1200x60x40" oninput="updateLightDescriptionPreview()">
+                    </div>
+                    <div>
+                        <label class="lbl">Мощность, Вт</label>
+                        <input type="text" id="newLightPower" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="36" oninput="updateLightDescriptionPreview()">
+                    </div>
+                    <div>
+                        <label class="lbl">Цвет свечения</label>
+                        <input type="text" id="newLightColorTemp" list="colorTempList" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" value="4000К" oninput="updateLightDescriptionPreview()">
+                        <datalist id="colorTempList">
+                            <option value="3000К">
+                            <option value="4000К">
+                            <option value="5000К">
+                            <option value="RGB">
+                            <option value="MIX">
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="lbl">Тип монтажа</label>
+                        <select id="newLightMountType" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="updateLightDescriptionPreview()">
+                            <option value="">— не указан —</option>
+                            <option value="подвесной">Подвесной</option>
+                            <option value="накладной">Накладной</option>
+                            <option value="встраиваемый">Встраиваемый</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="lbl">Длина тросов, мм</label>
+                        <input type="text" id="newLightCableLength" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="" oninput="updateLightDescriptionPreview()">
+                    </div>
+                    <div>
+                        <label class="lbl">Длина провода, мм</label>
+                        <input type="text" id="newLightWireLength" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="" oninput="updateLightDescriptionPreview()">
+                    </div>
+                    <div>
+                        <label class="lbl">Цвет корпуса</label>
+                        <input type="text" id="newLightBodyColor" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="белый" oninput="updateLightDescriptionPreview()">
+                    </div>
+                    <div>
+                        <label class="lbl">Цвет провода питания</label>
+                        <input type="text" id="newLightWireColor" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="белый" oninput="updateLightDescriptionPreview()">
+                    </div>
+                </div>
+                
+                <!-- Preview description -->
+                <div class="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                    <label class="lbl">Сформированное описание:</label>
+                    <div id="lightDescriptionPreview" class="text-sm text-slate-600 dark:text-slate-300 mt-1 min-h-[40px]">—</div>
+                </div>
+                
+                <div class="flex justify-end gap-2 mt-6">
+                    <button onclick="closeModal('addLightModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                    <button onclick="saveLightToProposal()" class="bg-blue-600 text-white px-4 py-2 rounded">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculation Editor Modal -->
+    <div id="calculationEditorModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl transition-colors">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg text-slate-800 dark:text-white">
+                        <i class="fas fa-calculator mr-2 text-blue-600"></i>Калькуляция
+                    </h3>
+                    <p class="text-sm font-medium text-slate-600 dark:text-slate-300" id="calcLightName"></p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1" id="calcLightDescription"></p>
+                </div>
+                <button onclick="closeModal('calculationEditorModal')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 flex-1 overflow-y-auto">
+                <input type="hidden" id="calcRequestId">
+                <input type="hidden" id="calcProposalId">
+                <input type="hidden" id="calcLightIdx">
+                <input type="hidden" id="calcId">
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="lbl">Название калькуляции</label>
+                        <input type="text" id="calcName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="lbl">Коэффициент наценки</label>
+                        <input type="number" id="calcCoefficient" step="0.01" min="1" value="1.5" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="updateCalcCoefficient()">
+                    </div>
+                </div>
+                
+                <!-- Search and Add -->
+                <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg mb-4">
+                    <div class="flex gap-2 items-end">
+                        <div class="flex-1 relative">
+                            <label class="lbl">Добавить компонент</label>
+                            <input type="text" id="calcItemSearch" class="inp dark:bg-slate-600 dark:border-slate-500 dark:text-white" placeholder="Категория → Товар..." autocomplete="off" oninput="handleCalcItemSearch(true)" onfocus="handleCalcItemSearch()">
+                            <div id="calcSearchResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg max-h-60 overflow-auto rounded-b-lg z-10"></div>
+                        </div>
+                        <button onclick="openAddCalcCustomItemModal()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" title="Добавить нестандартный компонент">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button onclick="openGlobalCalculationSearch()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600" title="Поиск готовых калькуляций">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Items Table -->
+                <div class="border dark:border-slate-700 rounded-lg overflow-hidden mb-4">
+                    <table class="w-full text-sm">
+                        <thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase">
+                            <tr>
+                                <th class="px-2 py-2 text-center w-10">№</th>
+                                <th class="px-2 py-2 text-left">Наименование</th>
+                                <th class="px-2 py-2 text-center w-16">Ед.</th>
+                                <th class="px-2 py-2 text-center w-20">Кол-во</th>
+                                <th class="px-2 py-2 text-right w-24">Цена</th>
+                                <th class="px-2 py-2 text-center w-16"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="calcItemsTableBody" class="text-slate-700 dark:text-slate-300"></tbody>
+                    </table>
+                </div>
+                
+                <!-- Totals -->
+                <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-sm text-slate-500 dark:text-slate-400">Себестоимость:</div>
+                            <div class="text-xl font-bold text-slate-800 dark:text-white" id="calcTotalCost">0 ₽</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-slate-500 dark:text-slate-400">Цена с наценкой:</div>
+                            <div class="text-xl font-bold text-blue-600 dark:text-blue-400" id="calcFinalPrice">0 ₽</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+                <button onclick="closeModal('calculationEditorModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                <button onclick="saveCalculation()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calc Custom Item Modal -->
+    <div id="calcCustomItemModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[60]">
+        <div class="modal-content bg-white dark:bg-slate-800 p-6 rounded-lg w-full max-w-sm shadow-2xl transition-colors">
+            <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Нестандартный компонент</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="lbl">Наименование</label>
+                    <input id="calcCustomName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="Название компонента">
+                </div>
+                <div>
+                    <label class="lbl">Ед. измерения</label>
+                    <select id="calcCustomUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                        <option value="шт.">шт.</option>
+                        <option value="п.м.">п.м.</option>
+                        <option value="уп.">уп.</option>
+                        <option value="кг">кг</option>
+                        <option value="л.">л.</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="lbl">Кол-во</label>
+                        <input id="calcCustomQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="1" min="0" step="0.01">
+                    </div>
+                    <div>
+                        <label class="lbl">Цена</label>
+                        <input id="calcCustomCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0" min="0" step="0.01">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button onclick="closeModal('calcCustomItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                <button onclick="addCalcCustomItem()" class="bg-yellow-500 text-white px-4 py-2 rounded font-bold hover:bg-yellow-600">Добавить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Calculation Search Modal -->
+    <div id="globalCalcSearchModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[60]">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-2xl h-[70vh] flex flex-col shadow-2xl transition-colors">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">
+                    <i class="fas fa-search mr-2 text-purple-600"></i>Поиск калькуляций
+                </h3>
+                <button onclick="closeModal('globalCalcSearchModal')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                <input type="text" id="globalCalcSearch" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white w-full" placeholder="Поиск по названию..." oninput="filterGlobalCalculations()">
+            </div>
+            <div id="globalCalcList" class="overflow-y-auto flex-1"></div>
+        </div>
+    </div>
+
+    <!-- Convert to Project Modal -->
+    <div id="convertToProjectModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl transition-colors">
+            <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">
+                    <i class="fas fa-exchange-alt mr-2 text-green-600"></i>Преобразовать в проект
+                </h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Выберите светильники для создания спецификаций</p>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto">
+                <input type="hidden" id="convertRequestId">
+                
+                <!-- Выбор КП -->
+                <div class="mb-4">
+                    <label class="lbl">Коммерческое предложение</label>
+                    <select id="convertProposalSelect" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="renderConvertLightsList()">
+                        <option value="">— выберите КП —</option>
+                    </select>
+                </div>
+                
+                <!-- Список светильников с чекбоксами -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="lbl">Светильники → Спецификации</label>
+                        <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+                            <input type="checkbox" id="convertSelectAll" onchange="toggleConvertSelectAll()" class="w-4 h-4">
+                            Выбрать все
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">Каждый выбранный светильник станет отдельной спецификацией</p>
+                    <div id="convertLightsList" class="border dark:border-slate-600 rounded-lg max-h-72 overflow-y-auto">
+                        <div class="p-4 text-center text-slate-400 text-sm">Выберите КП</div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+                <button onclick="closeModal('convertToProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                <button onclick="executeConvertToProject()" class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700">
+                    <i class="fas fa-check mr-1"></i> Создать проект
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Settings Modal -->
+    <div id="companySettingsModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl transition-colors">
+            <div class="p-6">
+                <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-building text-blue-600"></i> Реквизиты компании
+                </h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Эти данные будут использоваться при печати коммерческих предложений</p>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="col-span-2">
+                        <label class="lbl">Название компании</label>
+                        <input type="text" id="companyName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="ООО «Компания»">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="lbl">Адрес</label>
+                        <input type="text" id="companyAddress" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="г. Москва, ул. Примерная, д. 1">
+                    </div>
+                    <div>
+                        <label class="lbl">Телефон</label>
+                        <input type="text" id="companyPhone" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="+7 (999) 123-45-67">
+                    </div>
+                    <div>
+                        <label class="lbl">Email</label>
+                        <input type="email" id="companyEmail" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="info@company.ru">
+                    </div>
+                    <div>
+                        <label class="lbl">ИНН</label>
+                        <input type="text" id="companyInn" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="lbl">КПП</label>
+                        <input type="text" id="companyKpp" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="lbl">ОГРН</label>
+                        <input type="text" id="companyOgrn" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                </div>
+                
+                <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300 mb-3 mt-6">Банковские реквизиты</h4>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="col-span-2">
+                        <label class="lbl">Банк</label>
+                        <input type="text" id="companyBank" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="ПАО Сбербанк">
+                    </div>
+                    <div>
+                        <label class="lbl">БИК</label>
+                        <input type="text" id="companyBik" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="lbl">Расчетный счёт</label>
+                        <input type="text" id="companyAccount" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="lbl">Корр. счёт</label>
+                        <input type="text" id="companyCorrAccount" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="lbl">Логотип (URL)</label>
+                    <input type="text" id="companyLogo" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="https://example.com/logo.png">
+                </div>
+                
+                <div class="flex justify-end gap-2 mt-6">
+                    <button onclick="closeModal('companySettingsModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                    <button onclick="saveCompanySettings()" class="bg-blue-600 text-white px-4 py-2 rounded">Сохранить</button>
+                </div>
             </div>
         </div>
     </div>
@@ -887,6 +1486,46 @@
                                 </div>
                             </div>
                             
+                            <!-- Theme Colors -->
+                            <div class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="block text-sm font-medium text-slate-600 dark:text-slate-300">
+                                        Цветовая схема
+                                    </label>
+                                    <button onclick="resetThemeColors()" class="text-xs text-blue-500 hover:underline">Сбросить</button>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <!-- Light Theme / Base -->
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Светлая</div>
+                                        <div class="space-y-1">
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Фон 1</span> <input type="color" onchange="setThemeColor('--color-slate-100', this.value)" id="clr-slate-100" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Фон 2</span> <input type="color" onchange="setThemeColor('--color-slate-50', this.value)" id="clr-slate-50" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Бордер</span> <input type="color" onchange="setThemeColor('--color-slate-200', this.value)" id="clr-slate-200" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Текст</span> <input type="color" onchange="setThemeColor('--color-slate-800', this.value)" id="clr-slate-800" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                        </div>
+                                    </div>
+                                    <!-- Dark Theme / Deep -->
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Темная</div>
+                                        <div class="space-y-1">
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Фон 1</span> <input type="color" onchange="setThemeColor('--color-slate-900', this.value)" id="clr-slate-900" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Бордер</span> <input type="color" onchange="setThemeColor('--color-slate-700', this.value)" id="clr-slate-700" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Текст 1</span> <input type="color" onchange="setThemeColor('--color-slate-300', this.value)" id="clr-slate-300" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Текст 2</span> <input type="color" onchange="setThemeColor('--color-white', this.value)" id="clr-white" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="text-xs font-bold text-slate-400 uppercase mb-1">Акцент (Blue)</div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex flex-col items-center"><input type="color" onchange="setThemeColor('--color-blue-600', this.value)" id="clr-blue-600" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><span class="text-[10px] text-slate-400 mt-1">Main</span></div>
+                                        <div class="flex flex-col items-center"><input type="color" onchange="setThemeColor('--color-blue-500', this.value)" id="clr-blue-500" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><span class="text-[10px] text-slate-400 mt-1">Light</span></div>
+                                        <div class="flex flex-col items-center"><input type="color" onchange="setThemeColor('--color-blue-700', this.value)" id="clr-blue-700" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><span class="text-[10px] text-slate-400 mt-1">Dark</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <p class="text-xs text-slate-500 dark:text-slate-400">
                                 Настройки интерфейса сохраняются локально на вашем устройстве.
                             </p>
@@ -915,6 +1554,7 @@
     <script src="js/movements.js"></script>
     <script src="js/projects.js"></script>
     <script src="js/specs.js"></script>
+    <script src="js/commercial.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/help.js"></script>
     <script src="js/ui.js"></script>

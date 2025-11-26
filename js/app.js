@@ -17,7 +17,8 @@ function switchTab(t) {
     }
     
     if(t==='projects') renderProjects(); 
-    if(t==='specs') renderSpecProjectList(); 
+    if(t==='specs') renderSpecProjectList();
+    if(t==='commercial') renderCommercialRequestsList();
     if(t==='warehouse') {
         renderCategoryList(); 
         updatePaginationButtons(); // Обновляем кнопки при переключении на вкладку
@@ -44,6 +45,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+
+    // Инициализируем счетчик проектов
+    updateProjectSearchResults();
 });
 
 // Закрытие выпадающего меню при клике вне его

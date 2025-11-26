@@ -35,7 +35,15 @@ const ACTION_NAMES = {
     user_create: 'Создание пользователя',
     user_edit: 'Редактирование пользователя',
     user_delete: 'Удаление пользователя',
-    user_profile_update: 'Изменение профиля'
+    user_profile_update: 'Изменение профиля',
+    commercial_request_create: 'Создание запроса',
+    commercial_request_edit: 'Редактирование запроса',
+    commercial_request_delete: 'Удаление запроса',
+    commercial_request_convert: 'Преобразование в проект',
+    commercial_proposal_create: 'Создание КП',
+    commercial_proposal_delete: 'Удаление КП',
+    calculation_create: 'Создание калькуляции',
+    calculation_edit: 'Редактирование калькуляции'
 };
 
 // Названия вкладок
@@ -45,6 +53,7 @@ const TAB_NAMES = {
     movements: 'Работа со складом',
     projects: 'Проекты',
     specs: 'Спецификации',
+    commercial: 'Коммерческий отдел',
     help: 'Помощь'
 };
 
@@ -58,44 +67,48 @@ let currentPermissions = null;
 // Права по умолчанию для каждой роли
 const DEFAULT_ROLE_PERMISSIONS = {
     admin: {
-        tabs: ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'],
+        tabs: ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'commercial', 'help'],
         settings: true,
         manageUsers: true,
         manageRoles: true,
         items: { create: true, edit: true, delete: true, movement_in: true, movement_out: true },
         projects: { create: true, edit: true, delete: true, close: true },
         specs: { create: true, edit: true, delete: true, commit: true },
-        movements: { in: true, out: true, undo: true }
+        movements: { in: true, out: true, undo: true },
+        commercial: { create: true, edit: true, delete: true, convert: true }
     },
     director: {
-        tabs: ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'],
+        tabs: ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'commercial', 'help'],
         settings: false,
         manageUsers: false,
         manageRoles: false,
         items: { create: true, edit: true, delete: false, movement_in: true, movement_out: true },
         projects: { create: true, edit: true, delete: false, close: true },
         specs: { create: true, edit: true, delete: false, commit: true },
-        movements: { in: true, out: true, undo: false }
+        movements: { in: true, out: true, undo: false },
+        commercial: { create: true, edit: true, delete: false, convert: true }
     },
     sales_director: {
-        tabs: ['dashboard', 'warehouse', 'projects', 'specs', 'help'],
+        tabs: ['dashboard', 'warehouse', 'projects', 'specs', 'commercial', 'help'],
         settings: false,
         manageUsers: false,
         manageRoles: false,
         items: { create: false, edit: false, delete: false, movement_in: false, movement_out: false },
         projects: { create: true, edit: true, delete: false, close: true },
         specs: { create: true, edit: true, delete: false, commit: false },
-        movements: { in: false, out: false, undo: false }
+        movements: { in: false, out: false, undo: false },
+        commercial: { create: true, edit: true, delete: true, convert: true }
     },
     sales_manager: {
-        tabs: ['dashboard', 'projects', 'specs', 'help'],
+        tabs: ['dashboard', 'projects', 'specs', 'commercial', 'help'],
         settings: false,
         manageUsers: false,
         manageRoles: false,
         items: { create: false, edit: false, delete: false, movement_in: false, movement_out: false },
         projects: { create: true, edit: true, delete: false, close: false },
         specs: { create: true, edit: true, delete: false, commit: false },
-        movements: { in: false, out: false, undo: false }
+        movements: { in: false, out: false, undo: false },
+        commercial: { create: true, edit: true, delete: false, convert: false }
     },
     engineer: {
         tabs: ['dashboard', 'warehouse', 'specs', 'help'],
@@ -105,7 +118,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
         items: { create: false, edit: true, delete: false, movement_in: false, movement_out: false },
         projects: { create: false, edit: false, delete: false, close: false },
         specs: { create: true, edit: true, delete: false, commit: false },
-        movements: { in: false, out: false, undo: false }
+        movements: { in: false, out: false, undo: false },
+        commercial: { create: false, edit: false, delete: false, convert: false }
     },
     production_head: {
         tabs: ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'],
@@ -115,7 +129,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
         items: { create: true, edit: true, delete: false, movement_in: true, movement_out: true },
         projects: { create: false, edit: false, delete: false, close: false },
         specs: { create: true, edit: true, delete: false, commit: true },
-        movements: { in: true, out: true, undo: false }
+        movements: { in: true, out: true, undo: false },
+        commercial: { create: false, edit: false, delete: false, convert: false }
     },
     warehouse_head: {
         tabs: ['dashboard', 'warehouse', 'movements', 'help'],
@@ -125,7 +140,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
         items: { create: true, edit: true, delete: true, movement_in: true, movement_out: true },
         projects: { create: false, edit: false, delete: false, close: false },
         specs: { create: false, edit: false, delete: false, commit: false },
-        movements: { in: true, out: true, undo: true }
+        movements: { in: true, out: true, undo: true },
+        commercial: { create: false, edit: false, delete: false, convert: false }
     },
     guest: {
         tabs: ['dashboard', 'warehouse', 'projects', 'specs', 'help'],
@@ -135,7 +151,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
         items: { create: false, edit: false, delete: false, movement_in: false, movement_out: false },
         projects: { create: false, edit: false, delete: false, close: false },
         specs: { create: false, edit: false, delete: false, commit: false },
-        movements: { in: false, out: false, undo: false }
+        movements: { in: false, out: false, undo: false },
+        commercial: { create: false, edit: false, delete: false, convert: false }
     }
 };
 
@@ -149,7 +166,8 @@ function getGuestPermissions() {
         items: { create: false, edit: false, delete: false },
         projects: { create: false, edit: false, delete: false, close: false },
         specs: { create: false, edit: false, delete: false, commit: false },
-        movements: { in: false, out: false, undo: false }
+        movements: { in: false, out: false, undo: false },
+        commercial: { create: false, edit: false, delete: false, convert: false }
     };
 }
 
@@ -275,7 +293,7 @@ function applyPermissions() {
     if (!currentPermissions) return;
     
     // === ВКЛАДКИ ===
-    const allTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'];
+    const allTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'commercial', 'help'];
     allTabs.forEach(tab => {
         const tabBtn = document.getElementById(`tab-${tab}`);
         if (tabBtn) {
@@ -284,7 +302,7 @@ function applyPermissions() {
     });
     
     // Управление видимостью пунктов в выпадающем меню
-    const menuTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'];
+    const menuTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'commercial', 'help'];
     let hasAnyAccess = false;
     menuTabs.forEach(tab => {
         const menuItem = document.getElementById(`menu-tab-${tab}`);
@@ -307,6 +325,7 @@ function applyPermissions() {
         'fa-chart-pie': 'dashboard',
         'fa-boxes': 'warehouse',
         'fa-file-invoice': 'specs',
+        'fa-briefcase': 'commercial',
         'fa-question-circle': 'help'
     };
     mobileNavBtns.forEach(btn => {
@@ -384,7 +403,7 @@ function applyPermissions() {
 
 // Показать все элементы UI (для демо-режима)
 function showAllUIElements() {
-    const allTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'help'];
+    const allTabs = ['dashboard', 'warehouse', 'movements', 'projects', 'specs', 'commercial', 'help'];
     allTabs.forEach(tab => {
         const tabBtn = document.getElementById(`tab-${tab}`);
         if (tabBtn) tabBtn.style.display = '';
@@ -748,6 +767,17 @@ function renderRolePermissions() {
             ${createToggle('perm_movements_undo', 'Отмена операций', permissions.movements?.undo ? 'checked' : '')}
         `;
     }
+    
+    // Коммерческий отдел
+    const commercialContainer = document.getElementById('commercialPermissions');
+    if (commercialContainer) {
+        commercialContainer.innerHTML = `
+            ${createToggle('perm_commercial_create', 'Создание запросов', permissions.commercial?.create ? 'checked' : '')}
+            ${createToggle('perm_commercial_edit', 'Редактирование', permissions.commercial?.edit ? 'checked' : '')}
+            ${createToggle('perm_commercial_delete', 'Удаление', permissions.commercial?.delete ? 'checked' : '')}
+            ${createToggle('perm_commercial_convert', 'Преобразование в проект', permissions.commercial?.convert ? 'checked' : '')}
+        `;
+    }
 }
 
 function createToggle(id, label, checked) {
@@ -808,6 +838,12 @@ function saveRolePermissions() {
             in: document.getElementById('perm_items_movement_in')?.checked || document.getElementById('perm_movements_in')?.checked || false,
             out: document.getElementById('perm_items_movement_out')?.checked || document.getElementById('perm_movements_out')?.checked || false,
             undo: document.getElementById('perm_movements_undo')?.checked || false
+        },
+        commercial: {
+            create: document.getElementById('perm_commercial_create')?.checked || false,
+            edit: document.getElementById('perm_commercial_edit')?.checked || false,
+            delete: document.getElementById('perm_commercial_delete')?.checked || false,
+            convert: document.getElementById('perm_commercial_convert')?.checked || false
         }
     };
     

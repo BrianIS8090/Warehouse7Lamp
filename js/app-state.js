@@ -1,7 +1,12 @@
 // --- APP VARIABLES & STATE ---
-let db = { items: [], projects: [], specs: {}, movements: [] };
+let db = { items: [], projects: [], specs: {}, movements: [], commercialRequests: [], calculations: [], companySettings: {} };
 let currentFilterCat = 'all', selectedProjectId = null, selectedSpecId = null, hasUnsavedChanges = false;
 let selectedItems = new Set(); // Множество выбранных товаров для массового удаления
+
+// --- COMMERCIAL MODULE STATE ---
+let selectedCommercialRequestId = null;
+let selectedProposalId = null;
+let expandedCommercialRequests = new Set(); // Раскрытые запросы в дереве
 
 // --- INCREMENTAL SYNC: Отслеживание изменений для инкрементальной синхронизации ---
 let pendingChanges = {
@@ -11,7 +16,10 @@ let pendingChanges = {
     movements: { updated: new Set(), deleted: new Set() },
     users: { updated: new Set(), deleted: new Set() }, // Для синхронизации пользователей
     rolePermissions: false, // true = нужно синхронизировать всю структуру
-    activityLogs: false // true = нужно синхронизировать весь массив
+    activityLogs: false, // true = нужно синхронизировать весь массив
+    commercialRequests: { updated: new Set(), deleted: new Set() },
+    calculations: { updated: new Set(), deleted: new Set() },
+    companySettings: false // true = нужно синхронизировать настройки компании
 };
 
 // Вспомогательные функции для отслеживания изменений
@@ -39,13 +47,16 @@ function clearPendingChanges() {
         movements: { updated: new Set(), deleted: new Set() },
         users: { updated: new Set(), deleted: new Set() },
         rolePermissions: false,
-        activityLogs: false
+        activityLogs: false,
+        commercialRequests: { updated: new Set(), deleted: new Set() },
+        calculations: { updated: new Set(), deleted: new Set() },
+        companySettings: false
     };
 }
 
 function hasPendingChanges() {
     for (const [key, collection] of Object.entries(pendingChanges)) {
-        if (key === 'rolePermissions' || key === 'activityLogs') {
+        if (key === 'rolePermissions' || key === 'activityLogs' || key === 'companySettings') {
             if (collection === true) return true;
         } else if (collection.updated && (collection.updated.size > 0 || collection.deleted.size > 0)) {
             return true;

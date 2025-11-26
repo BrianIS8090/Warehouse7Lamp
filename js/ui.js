@@ -175,9 +175,18 @@ function createNewItem() {
     }
 }
 
-function openCreateProjectModal() { 
-    document.getElementById('newPrName').value=''; 
-    openModal('createProjectModal'); 
+function openCreateProjectModal() {
+    // Очищаем все поля кроме года
+    document.getElementById('newPrYear').value = new Date().getFullYear();
+    document.getElementById('newPrNum').value = '';
+    document.getElementById('newPrName').value = '';
+    document.getElementById('newPrDesc').value = '';
+    document.getElementById('newPrClient').value = '';
+    document.getElementById('newPrStart').value = '';
+    document.getElementById('newPrEnd').value = '';
+    document.getElementById('newPrCost').value = '';
+    document.getElementById('newPrFile').value = '';
+    openModal('createProjectModal');
 }
 
 function createNewProject() { 
@@ -1105,6 +1114,11 @@ function updateUICustomizationControls() {
     } else {
         leftBtn.className = `flex-1 py-2 px-3 rounded-l-lg font-medium text-sm transition ${inactiveClass} hover:bg-slate-200 dark:hover:bg-slate-600`;
         rightBtn.className = `flex-1 py-2 px-3 rounded-r-lg font-medium text-sm transition ${activeClass}`;
+    }
+
+    // Update theme color inputs
+    if (typeof updateThemeColorInputs === 'function') {
+        updateThemeColorInputs();
     }
 }
 

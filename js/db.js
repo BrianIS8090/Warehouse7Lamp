@@ -9,7 +9,10 @@ function normalizeCloudData(cloudData) {
         specs: {},
         users: {},
         rolePermissions: {},
-        activityLogs: []
+        activityLogs: [],
+        commercialRequests: [],
+        calculations: [],
+        companySettings: {}
     };
     
     // Преобразуем items: объект {id: item} -> массив [item, item, ...]
@@ -59,6 +62,29 @@ function normalizeCloudData(cloudData) {
         normalized.activityLogs = cloudData.activityLogs.filter(Boolean);
     }
     
+    // Преобразуем commercialRequests
+    if (cloudData.commercialRequests) {
+        if (Array.isArray(cloudData.commercialRequests)) {
+            normalized.commercialRequests = cloudData.commercialRequests.filter(Boolean);
+        } else {
+            normalized.commercialRequests = Object.values(cloudData.commercialRequests).filter(Boolean);
+        }
+    }
+    
+    // Преобразуем calculations
+    if (cloudData.calculations) {
+        if (Array.isArray(cloudData.calculations)) {
+            normalized.calculations = cloudData.calculations.filter(Boolean);
+        } else {
+            normalized.calculations = Object.values(cloudData.calculations).filter(Boolean);
+        }
+    }
+    
+    // companySettings остаётся объектом
+    if (cloudData.companySettings && typeof cloudData.companySettings === 'object' && !Array.isArray(cloudData.companySettings)) {
+        normalized.companySettings = cloudData.companySettings;
+    }
+    
     return normalized;
 }
 
@@ -102,7 +128,10 @@ async function init(force = false) {
                 if(!db.items) db.items = []; 
                 if(!db.projects) db.projects = []; 
                 if(!db.movements) db.movements = []; 
-                if(!db.specs || Array.isArray(db.specs)) db.specs = {}; 
+                if(!db.specs || Array.isArray(db.specs)) db.specs = {};
+                if(!db.commercialRequests) db.commercialRequests = [];
+                if(!db.calculations) db.calculations = [];
+                if(!db.companySettings) db.companySettings = {};
             } else {
                 seedData(); 
             }
@@ -151,7 +180,10 @@ async function init(force = false) {
             if(!db.items) db.items = []; 
             if(!db.projects) db.projects = []; 
             if(!db.movements) db.movements = []; 
-            if(!db.specs || Array.isArray(db.specs)) db.specs = {}; 
+            if(!db.specs || Array.isArray(db.specs)) db.specs = {};
+            if(!db.commercialRequests) db.commercialRequests = [];
+            if(!db.calculations) db.calculations = [];
+            if(!db.companySettings) db.companySettings = {};
             showToast("Оффлайн режим (ошибка сети)");
             // В оффлайн режиме не очищаем pendingChanges - они синхронизируются позже
         }
@@ -288,6 +320,44 @@ async function syncWithCloud() {
             }
         }
         
+        // Обрабатываем commercialRequests
+        if (pendingChanges.commercialRequests) {
+            for (const id of pendingChanges.commercialRequests.updated) {
+                const request = db.commercialRequests.find(r => String(r.id) === id);
+                if (request) {
+                    updates['commercialRequests/' + id] = request;
+                    changesCount++;
+                }
+            }
+            for (const id of pendingChanges.commercialRequests.deleted) {
+                updates['commercialRequests/' + id] = null;
+                changesCount++;
+            }
+        }
+        
+        // Обрабатываем calculations
+        if (pendingChanges.calculations) {
+            for (const id of pendingChanges.calculations.updated) {
+                const calc = db.calculations.find(c => String(c.id) === id);
+                if (calc) {
+                    updates['calculations/' + id] = calc;
+                    changesCount++;
+                }
+            }
+            for (const id of pendingChanges.calculations.deleted) {
+                updates['calculations/' + id] = null;
+                changesCount++;
+            }
+        }
+        
+        // Обрабатываем companySettings (синхронизируем целиком)
+        if (pendingChanges.companySettings === true) {
+            if (db.companySettings && Object.keys(db.companySettings).length > 0) {
+                updates['companySettings'] = db.companySettings;
+                changesCount++;
+            }
+        }
+        
         // Обрабатываем activityLogs (всегда синхронизируем, т.к. логи добавляются часто)
         if (db.activityLogs && Array.isArray(db.activityLogs) && db.activityLogs.length > 0) {
             updates['activityLogs'] = db.activityLogs;
@@ -374,7 +444,23 @@ function seedData(){
         ], 
         projects: [], 
         specs: {}, 
-        movements: [] 
+        movements: [],
+        commercialRequests: [],
+        calculations: [],
+        companySettings: {
+            name: '',
+            address: '',
+            phone: '',
+            email: '',
+            inn: '',
+            kpp: '',
+            ogrn: '',
+            bank: '',
+            bik: '',
+            account: '',
+            corrAccount: '',
+            logo: ''
+        }
     }; 
 }
 
@@ -451,6 +537,9 @@ function refreshAll(){
         } 
         if(selectedSpecId) loadSpec(selectedSpecId);
     renderHistoryTable(); 
-    renderDashboard(); 
+    renderDashboard();
+    if(typeof renderCommercialRequestsList === 'function') {
+        renderCommercialRequestsList();
+    }
 }
 
