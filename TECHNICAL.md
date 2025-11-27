@@ -1,4 +1,4 @@
-# 🔧 Техническая документация — Склад Online v5.1
+# 🔧 Техническая документация — Склад Online v5.2
 
 ## Содержание
 
@@ -69,6 +69,7 @@
 │  │ - theme.js      (Темы)                     │ │
 │  │ - permissions.js (Система прав доступа)    │ │
 │  │ - help.js       (Система справки)          │ │
+│  │ - commercial.js (Коммерческий отдел)       │ │
 │  ├────────────────────────────────────────────┤ │
 │  │ State Management:                          │ │
 │  │ - app-state.js  (Глобальное состояние)     │ │
@@ -730,6 +731,127 @@ function loadSavedTheme(): void
 
 ---
 
+### 13. commercial.js — Коммерческий отдел
+
+#### Управление запросами
+
+```javascript
+// Отрисовка дерева запросов
+function renderCommercialRequestsList(): void
+// 1. Группировка по годам
+// 2. Сортировка по номеру
+// 3. Отображение количества КП
+// 4. Индикация статуса (активный/преобразован)
+
+// CRUD операции
+function openCreateCommercialRequestModal(): void
+function createCommercialRequest(): void
+function autoSaveCommercialRequest(): void
+function deleteCommercialRequest(): void
+
+// Навигация
+function selectCommercialRequest(requestId: string): void
+function toggleCommercialRequestExpand(requestId: string): void
+```
+
+#### Коммерческие предложения (КП)
+
+```javascript
+// CRUD операции
+function openAddProposalModal(): void
+function createCommercialProposal(): void
+function deleteCommercialProposal(requestId: string, proposalId: string): void
+
+// Отрисовка
+function renderProposalsList(request: CommercialRequest): void
+function calculateProposalTotal(proposal: Proposal): number
+```
+
+#### Светильники
+
+```javascript
+// Добавление/редактирование
+function openAddLightModal(editIdx?: number): void
+function saveLightToProposal(): void
+function updateLightQty(requestId: string, proposalId: string, idx: number, value: string): void
+function deleteLight(requestId: string, proposalId: string, idx: number): void
+
+// Генерация описания
+function generateLightDescription(light: Light): string
+function updateLightDescriptionPreview(): void
+
+// Рендер таблицы
+function renderLightsTable(request: CommercialRequest, proposal: Proposal): void
+```
+
+#### Калькуляции
+
+```javascript
+// Редактор калькуляции
+function openCalculationEditor(requestId: string, proposalId: string, lightIdx: number): void
+function renderCalculationItems(): void
+function updateCalculationTotals(totalCost: number, coefficient: number): void
+function saveCalculation(): void
+
+// Поиск компонентов
+function handleCalcItemSearch(isTyping?: boolean): void
+function selectCalcSearchItem(itemId: number): void
+function selectCalcCategory(cat: string): void
+function addItemToCalculation(itemId: number): void
+
+// Нестандартные позиции
+function openAddCalcCustomItemModal(): void
+function addCalcCustomItem(): void
+
+// Глобальный поиск калькуляций
+function openGlobalCalculationSearch(): void
+function selectGlobalCalculation(calcId: string): void
+```
+
+#### Конвертация в проект
+
+```javascript
+// Преобразование запроса в проект
+function convertRequestToProject(): void
+function renderConvertLightsList(): void
+function executeConvertToProject(): void
+
+// Алгоритм конвертации:
+// 1. Создание проекта из данных запроса
+// 2. Для каждого выбранного светильника с калькуляцией:
+//    - Создание спецификации
+//    - Копирование компонентов из калькуляции
+//    - Установка количества = количеству светильников
+// 3. Изменение статуса запроса на 'converted'
+// 4. Связывание запроса с проектом
+```
+
+#### Печать КП
+
+```javascript
+function printCommercialProposal(requestId: string, proposalId: string): void
+// 1. Генерация HTML с реквизитами компании
+// 2. Таблица светильников с описаниями
+// 3. Итоговые суммы
+// 4. Банковские реквизиты
+// 5. Вызов window.print()
+```
+
+#### Настройки компании
+
+```javascript
+function openCompanySettingsModal(): void
+function saveCompanySettings(): void
+
+// Сохраняемые данные:
+// - name, address, phone, email
+// - inn, kpp, ogrn
+// - bank, bik, account, corrAccount
+// - logo (URL)
+```
+
+---
+
 ## Структура данных
 
 ### TypeScript Definitions (для справки)
@@ -796,6 +918,83 @@ interface Database {
     projects: Project[];
     specs: Record<number, Spec[]>;  // projectId → specs[]
     movements: Movement[];
+    commercialRequests: CommercialRequest[];
+    calculations: Calculation[];
+    companySettings: CompanySettings;
+}
+
+interface CommercialRequest {
+    id: string;
+    year: number;
+    number: string;
+    name: string;
+    client: string;
+    description?: string;
+    status: 'active' | 'converted' | 'deleted';
+    projectId?: number;      // ID проекта после конвертации
+    proposals: Proposal[];
+    createdAt: number;
+    updatedAt: number;
+}
+
+interface Proposal {
+    id: string;
+    name: string;
+    lights: Light[];
+    createdAt: number;
+    updatedAt: number;
+}
+
+interface Light {
+    id: string;
+    name: string;
+    qty: number;
+    dimensions?: string;     // Габариты (мм)
+    power?: string;          // Мощность (Вт)
+    colorTemp?: string;      // Цветовая температура
+    mountType?: string;      // Тип монтажа
+    cableLength?: string;    // Длина тросов
+    wireLength?: string;     // Длина провода
+    bodyColor?: string;      // Цвет корпуса
+    wireColor?: string;      // Цвет провода
+    description?: string;    // Авто-генерируемое описание
+    calculationId?: string;  // Связь с калькуляцией
+}
+
+interface Calculation {
+    id: string;
+    name: string;
+    coefficient: number;     // Коэффициент наценки (default: 1.5)
+    items: CalcItem[];
+    totalCost: number;       // Сумма компонентов
+    finalPrice: number;      // totalCost * coefficient
+    createdAt: number;
+    updatedAt: number;
+}
+
+interface CalcItem {
+    itemId?: number;         // ID товара со склада
+    qty: number;
+    isCustom: boolean;
+    // Для нестандартных позиций:
+    name?: string;
+    unit?: string;
+    cost?: number;
+}
+
+interface CompanySettings {
+    name?: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+    inn?: string;
+    kpp?: string;
+    ogrn?: string;
+    bank?: string;
+    bik?: string;
+    account?: string;
+    corrAccount?: string;
+    logo?: string;           // URL логотипа
 }
 ```
 
@@ -1316,9 +1515,9 @@ docs: обновлена документация
 
 ---
 
-**Последнее обновление:** 24 ноября 2025
+**Последнее обновление:** 26 ноября 2025
 
-**Версия документации:** 1.0
+**Версия документации:** 5.2.0
 
 **Автор:** Разработано для эффективного управления складом
 

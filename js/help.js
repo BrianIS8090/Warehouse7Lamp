@@ -84,6 +84,18 @@ function getHelpSectionContent(sectionId) {
                         </div>
                     </div>
                     
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">💼 Коммерческий отдел</h3>
+                    
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600 mb-4">
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-2">Полный цикл работы с клиентом:</p>
+                        <ol class="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside">
+                            <li>Создайте <strong>запрос</strong> в "Коммерческом отделе"</li>
+                            <li>Добавьте <strong>КП</strong> (коммерческое предложение)</li>
+                            <li>Создайте <strong>калькуляции</strong> для светильников</li>
+                            <li>Преобразуйте в <strong>проект</strong> одной кнопкой</li>
+                        </ol>
+                    </div>
+                    
                     <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-600 p-4 mt-6">
                         <p class="font-bold text-yellow-900 dark:text-yellow-300 mb-2">💡 Совет</p>
                         <p class="text-slate-700 dark:text-slate-400 text-sm">Регулярно делайте резервные копии через Настройки → "Скачать базу (Backup)"</p>
@@ -416,6 +428,228 @@ function getHelpSectionContent(sectionId) {
             </div>
         `,
         
+        commercial: `
+            <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-briefcase text-blue-600"></i>
+                    Коммерческий отдел
+                </h2>
+                
+                <div class="prose dark:prose-invert max-w-none">
+                    <p class="text-slate-600 dark:text-slate-400 mb-6">
+                        Модуль для работы с коммерческими запросами, созданием КП (коммерческих предложений) и расчётом калькуляций.
+                    </p>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">📋 Коммерческие запросы</h3>
+                    
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600 mb-4">
+                        <p class="text-sm text-slate-600 dark:text-slate-400 mb-3">Запрос — это обращение клиента, которое может содержать несколько КП:</p>
+                        <ul class="text-sm text-slate-600 dark:text-slate-400 space-y-2">
+                            <li><strong class="text-slate-800 dark:text-white">Год</strong> — год обращения</li>
+                            <li><strong class="text-slate-800 dark:text-white">Номер</strong> — уникальный номер запроса (Д25-001)</li>
+                            <li><strong class="text-slate-800 dark:text-white">Название</strong> — краткое описание</li>
+                            <li><strong class="text-slate-800 dark:text-white">Клиент</strong> — имя заказчика</li>
+                            <li><strong class="text-slate-800 dark:text-white">Описание</strong> — подробности запроса</li>
+                        </ul>
+                    </div>
+                    
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 mt-4 mb-2">Создание запроса</h4>
+                    <ol class="text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside mb-4">
+                        <li>Перейдите во вкладку <strong>"Коммерческий отдел"</strong></li>
+                        <li>Нажмите кнопку <strong>"+ Запрос"</strong></li>
+                        <li>Заполните данные и нажмите <strong>"Создать"</strong></li>
+                    </ol>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">📄 Коммерческие предложения (КП)</h3>
+                    
+                    <p class="text-slate-600 dark:text-slate-400 mb-4">
+                        КП — это конкретное предложение для клиента со списком светильников и их стоимостью.
+                    </p>
+                    
+                    <h4 class="font-bold text-slate-700 dark:text-slate-300 mt-4 mb-2">Создание КП</h4>
+                    <ol class="text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside mb-4">
+                        <li>Выберите запрос в левой панели</li>
+                        <li>В карточке запроса нажмите <strong>"+ Добавить КП"</strong></li>
+                        <li>Введите название КП</li>
+                        <li>Добавьте светильники</li>
+                    </ol>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">💡 Работа со светильниками</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2">Добавление светильника</h4>
+                            <ol class="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside">
+                                <li>Нажмите <strong>"+ Светильник"</strong></li>
+                                <li>Укажите название и параметры</li>
+                                <li>Задайте количество</li>
+                            </ol>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2">Калькуляция</h4>
+                            <ol class="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside">
+                                <li>Нажмите <i class="fas fa-calculator"></i> у светильника</li>
+                                <li>Добавьте комплектующие со склада</li>
+                                <li>Укажите наценку и работы</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">🧮 Калькуляция светильника</h3>
+                    
+                    <p class="text-slate-600 dark:text-slate-400 mb-4">
+                        Калькуляция позволяет рассчитать себестоимость изделия:
+                    </p>
+                    
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600 mb-4">
+                        <ul class="text-sm text-slate-600 dark:text-slate-400 space-y-2">
+                            <li><strong class="text-slate-800 dark:text-white">Комплектующие</strong> — добавьте товары со склада с указанием количества</li>
+                            <li><strong class="text-slate-800 dark:text-white">Работы</strong> — добавьте виды работ с ценами</li>
+                            <li><strong class="text-slate-800 dark:text-white">Себестоимость</strong> — автоматически рассчитывается</li>
+                            <li><strong class="text-slate-800 dark:text-white">Наценка (%)</strong> — процент наценки к себестоимости</li>
+                            <li><strong class="text-slate-800 dark:text-white">Итоговая цена</strong> — финальная стоимость светильника</li>
+                        </ul>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">🔄 Преобразование в проект</h3>
+                    
+                    <p class="text-slate-600 dark:text-slate-400 mb-4">
+                        Когда клиент подтверждает заказ:
+                    </p>
+                    <ol class="text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside mb-4">
+                        <li>Откройте карточку запроса</li>
+                        <li>Нажмите <strong>"Преобразовать в проект"</strong></li>
+                        <li>Система создаст проект со спецификациями на основе выбранного КП</li>
+                        <li>Запрос получит статус "В проекте"</li>
+                    </ol>
+                    
+                    <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-600 p-4 mb-4">
+                        <p class="font-bold text-green-900 dark:text-green-300 mb-2">✅ Автоматизация</p>
+                        <p class="text-slate-700 dark:text-slate-400 text-sm">При преобразовании создаётся проект с полными спецификациями на основе калькуляций. Все комплектующие автоматически резервируются на складе!</p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">🖨️ Печать КП</h3>
+                    <p class="text-slate-600 dark:text-slate-400 mb-4">
+                        В списке КП нажмите <i class="fas fa-print"></i> для генерации печатной формы коммерческого предложения.
+                    </p>
+                </div>
+            </div>
+        `,
+        
+        users: `
+            <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-users text-blue-600"></i>
+                    Пользователи и роли
+                </h2>
+                
+                <div class="prose dark:prose-invert max-w-none">
+                    <p class="text-slate-600 dark:text-slate-400 mb-6">
+                        Система поддерживает гибкое управление доступом с разграничением прав по ролям.
+                    </p>
+                    
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-600 p-4 mb-6">
+                        <p class="font-bold text-yellow-900 dark:text-yellow-300 mb-2">⚠️ Только для администратора</p>
+                        <p class="text-slate-700 dark:text-slate-400 text-sm">Управление пользователями и ролями доступно только пользователям с ролью "Администратор".</p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">👥 Роли пользователей</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border-l-4 border-purple-600">
+                            <h4 class="font-bold text-purple-900 dark:text-purple-300 mb-2">👑 Администратор</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Полный доступ ко всем функциям. Управление пользователями, ролями и настройками.</p>
+                        </div>
+                        
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-blue-600">
+                            <h4 class="font-bold text-blue-900 dark:text-blue-300 mb-2">🏢 Директор компании</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Доступ ко всем вкладкам. Может создавать, редактировать и закрывать проекты.</p>
+                        </div>
+                        
+                        <div class="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border-l-4 border-green-600">
+                            <h4 class="font-bold text-green-900 dark:text-green-300 mb-2">💼 Коммерческий директор</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Работа с проектами, спецификациями и коммерческим отделом.</p>
+                        </div>
+                        
+                        <div class="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border-l-4 border-teal-600">
+                            <h4 class="font-bold text-teal-900 dark:text-teal-300 mb-2">📊 Менеджер продаж</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Создание проектов и работа с коммерческим отделом.</p>
+                        </div>
+                        
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border-l-4 border-indigo-600">
+                            <h4 class="font-bold text-indigo-900 dark:text-indigo-300 mb-2">🔧 Инженер</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Просмотр склада, создание и редактирование спецификаций.</p>
+                        </div>
+                        
+                        <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border-l-4 border-orange-600">
+                            <h4 class="font-bold text-orange-900 dark:text-orange-300 mb-2">🏭 Начальник производства</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Работа со складом, движение товаров, списание по спецификациям.</p>
+                        </div>
+                        
+                        <div class="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border-l-4 border-amber-600">
+                            <h4 class="font-bold text-amber-900 dark:text-amber-300 mb-2">📦 Начальник склада</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Полное управление складом: создание, редактирование, удаление товаров, приход и списание.</p>
+                        </div>
+                        
+                        <div class="bg-slate-100 dark:bg-slate-600/20 p-4 rounded-lg border-l-4 border-slate-400">
+                            <h4 class="font-bold text-slate-900 dark:text-slate-300 mb-2">👀 Гость</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">Только просмотр информации без возможности изменений.</p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">➕ Добавление пользователя</h3>
+                    <ol class="text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside mb-4">
+                        <li>Откройте <strong>Настройки</strong> → <strong>"Управление пользователями"</strong></li>
+                        <li>Нажмите <strong>"+ Добавить пользователя"</strong></li>
+                        <li>Введите email, имя и выберите роль</li>
+                        <li>Установите галочку "Активен"</li>
+                        <li>Нажмите <strong>"Сохранить"</strong></li>
+                    </ol>
+                    
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600 p-4 mb-4">
+                        <p class="font-bold text-blue-900 dark:text-blue-300 mb-2">💡 Автоматическая регистрация</p>
+                        <p class="text-slate-700 dark:text-slate-400 text-sm">Когда новый пользователь входит через Firebase, он автоматически добавляется в систему со статусом "Неактивен". Администратор должен назначить роль и активировать доступ.</p>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">⚙️ Настройка прав роли</h3>
+                    <ol class="text-slate-600 dark:text-slate-400 space-y-2 list-decimal list-inside mb-4">
+                        <li>Откройте <strong>Настройки</strong> → <strong>"Настройка ролей"</strong></li>
+                        <li>Выберите роль из выпадающего списка</li>
+                        <li>Настройте доступ к вкладкам и операциям</li>
+                        <li>Нажмите <strong>"Сохранить права"</strong></li>
+                    </ol>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">📜 Журнал действий</h3>
+                    <p class="text-slate-600 dark:text-slate-400 mb-4">
+                        Система автоматически записывает все действия пользователей:
+                    </p>
+                    <ul class="text-sm text-slate-600 dark:text-slate-400 space-y-2 mb-4">
+                        <li>• Создание, редактирование, удаление товаров</li>
+                        <li>• Операции прихода и списания</li>
+                        <li>• Работа с проектами и спецификациями</li>
+                        <li>• Действия в коммерческом отделе</li>
+                        <li>• Вход/выход из системы</li>
+                        <li>• Изменения прав и настроек</li>
+                    </ul>
+                    
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600 mb-4">
+                        <h4 class="font-bold text-slate-800 dark:text-white mb-2">Просмотр логов</h4>
+                        <ol class="text-sm text-slate-600 dark:text-slate-400 space-y-1 list-decimal list-inside">
+                            <li>Откройте <strong>Настройки</strong> → <strong>"Журнал действий"</strong></li>
+                            <li>Используйте фильтры: по пользователю, действию, дате</li>
+                            <li>Экспортируйте в CSV при необходимости</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-600 p-4">
+                        <p class="font-bold text-green-900 dark:text-green-300 mb-2">✅ Безопасность</p>
+                        <p class="text-slate-700 dark:text-slate-400 text-sm">Журнал действий помогает отслеживать кто, когда и какие изменения вносил в систему.</p>
+                    </div>
+                </div>
+            </div>
+        `,
+        
         settings: `
             <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-6 transition-colors">
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
@@ -425,7 +659,7 @@ function getHelpSectionContent(sectionId) {
                 
                 <div class="prose dark:prose-invert max-w-none">
                     <p class="text-slate-600 dark:text-slate-400 mb-6">
-                        Настройки доступны через кнопку ⚙️ в правом верхнем углу.
+                        Настройки доступны через кнопку ⚙️ в правом верхнем углу. Полный доступ к настройкам имеет только администратор.
                     </p>
                     
                     <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">🔘 Переключатели функций</h3>
@@ -445,6 +679,31 @@ function getHelpSectionContent(sectionId) {
                                 Разрешает удаление проектов из карточки проекта.
                             </p>
                             <p class="text-xs text-slate-500 dark:text-slate-500">По умолчанию: выключено (для безопасности)</p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">👥 Администрирование (только для администратора)</h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border-l-4 border-purple-600">
+                            <h4 class="font-bold text-purple-900 dark:text-purple-300 mb-2">Управление пользователями</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">
+                                Добавление, редактирование и удаление пользователей. Назначение ролей и активация/деактивация учётных записей.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg border-l-4 border-indigo-600">
+                            <h4 class="font-bold text-indigo-900 dark:text-indigo-300 mb-2">Настройка ролей</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">
+                                Гибкая настройка прав доступа для каждой роли: вкладки, операции с товарами, проектами, спецификациями и коммерческим отделом.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border-l-4 border-teal-600">
+                            <h4 class="font-bold text-teal-900 dark:text-teal-300 mb-2">Журнал действий</h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">
+                                Просмотр всех действий пользователей в системе. Фильтрация по пользователю, типу действия и дате. Экспорт в CSV.
+                            </p>
                         </div>
                     </div>
                     
@@ -555,6 +814,24 @@ function getHelpSectionContent(sectionId) {
                                 Поиск ищет как по названию, так и по производителю. Можно вводить часть слова — система найдёт совпадения.
                             </p>
                         </div>
+                        
+                        <div class="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/20 p-5 rounded-lg border-l-4 border-teal-600">
+                            <h4 class="font-bold text-teal-900 dark:text-teal-300 mb-2 flex items-center gap-2">
+                                <i class="fas fa-exchange-alt"></i>Из КП в проект
+                            </h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">
+                                Создайте КП в коммерческом отделе, а затем преобразуйте его в проект одной кнопкой. Все спецификации создадутся автоматически!
+                            </p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 p-5 rounded-lg border-l-4 border-orange-600">
+                            <h4 class="font-bold text-orange-900 dark:text-orange-300 mb-2 flex items-center gap-2">
+                                <i class="fas fa-calculator"></i>Калькуляции
+                            </h4>
+                            <p class="text-sm text-slate-700 dark:text-slate-400">
+                                Рассчитывайте себестоимость изделий на основе комплектующих со склада. Добавьте наценку — получите цену для клиента.
+                            </p>
+                        </div>
                     </div>
                     
                     <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">⚡ Быстрые операции</h3>
@@ -564,6 +841,7 @@ function getHelpSectionContent(sectionId) {
                             <li><strong>🔴 Красная стрелка вверх</strong> — быстрое списание товара</li>
                             <li><strong>Клик на товар</strong> — открытие полной карточки с историей</li>
                             <li><strong>Клик на проект</strong> — открытие карточки с редактированием</li>
+                            <li><strong>Клик на запрос</strong> — открытие карточки с КП</li>
                         </ul>
                     </div>
                     
@@ -578,6 +856,16 @@ function getHelpSectionContent(sectionId) {
                         </ul>
                     </div>
                     
+                    <h3 class="text-lg font-bold text-slate-700 dark:text-slate-300 mt-6 mb-3">🔐 Права доступа</h3>
+                    <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-lg border dark:border-slate-600 mb-4">
+                        <ul class="text-sm text-slate-600 dark:text-slate-400 space-y-2">
+                            <li><strong>Администратор</strong> может настроить права каждой роли индивидуально</li>
+                            <li>Интерфейс автоматически скрывает недоступные функции</li>
+                            <li>Все действия записываются в журнал</li>
+                            <li>Новые пользователи требуют активации администратором</li>
+                        </ul>
+                    </div>
+                    
                     <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-600 p-4">
                         <p class="font-bold text-green-900 dark:text-green-300 mb-2">✅ Лучшие практики</p>
                         <ul class="text-slate-700 dark:text-slate-400 text-sm space-y-1">
@@ -586,6 +874,8 @@ function getHelpSectionContent(sectionId) {
                             <li>• Используйте категории для группировки товаров</li>
                             <li>• Добавляйте характеристики к товарам</li>
                             <li>• Прикрепляйте фото и документы</li>
+                            <li>• Создавайте КП для всех клиентов</li>
+                            <li>• Периодически проверяйте журнал действий</li>
                         </ul>
                     </div>
                 </div>
@@ -671,6 +961,46 @@ function getHelpSectionContent(sectionId) {
                         
                         <div class="bg-slate-50 dark:bg-slate-700 p-5 rounded-lg border dark:border-slate-600">
                             <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                                <i class="fas fa-user-lock text-blue-600"></i>
+                                Не вижу некоторые вкладки/кнопки
+                            </h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Доступ к функциям зависит от вашей роли. Если не хватает прав — обратитесь к администратору для изменения роли или настройки прав.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-700 p-5 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                                <i class="fas fa-user-plus text-blue-600"></i>
+                                Вошёл в систему, но нет доступа
+                            </h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Новые пользователи требуют активации администратором. Он должен назначить вам роль и установить статус "Активен" в настройках пользователей.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-700 p-5 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                                <i class="fas fa-briefcase text-blue-600"></i>
+                                Как работает коммерческий отдел?
+                            </h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Создайте запрос → добавьте КП со светильниками → рассчитайте калькуляции → преобразуйте в проект. Все этапы взаимосвязаны и автоматизированы.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-700 p-5 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                                <i class="fas fa-calculator text-blue-600"></i>
+                                Что такое калькуляция?
+                            </h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Калькуляция — расчёт себестоимости изделия. Добавьте комплектующие со склада, укажите работы, примените наценку — получите финальную цену для клиента.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-700 p-5 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
                                 <i class="fas fa-sync-alt text-blue-600"></i>
                                 Не загружаются данные, что делать?
                             </h4>
@@ -703,6 +1033,16 @@ function getHelpSectionContent(sectionId) {
                             </h4>
                             <p class="text-sm text-slate-600 dark:text-slate-400">
                                 Используйте демо-режим для доступа к локальным данным, или восстановите пароль через Firebase Authentication.
+                            </p>
+                        </div>
+                        
+                        <div class="bg-slate-50 dark:bg-slate-700 p-5 rounded-lg border dark:border-slate-600">
+                            <h4 class="font-bold text-slate-800 dark:text-white mb-2 flex items-center gap-2">
+                                <i class="fas fa-history text-blue-600"></i>
+                                Кто изменил данные?
+                            </h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">
+                                Откройте Настройки → Журнал действий. Там записаны все операции с указанием пользователя, времени и типа действия.
                             </p>
                         </div>
                         

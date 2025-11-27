@@ -218,8 +218,18 @@ function openCreateNewSpec() {
             });
         }
         
-        save(); 
-        showToast("Спецификация создана"); 
+        save();
+        showToast("Спецификация создана");
+
+        // Если карточка проекта открыта, обновляем её содержимое
+        const projectCardModal = document.getElementById('projectCardModal');
+        if (projectCardModal && !projectCardModal.classList.contains('hidden')) {
+            // Обновляем содержимое карточки проекта
+            if (typeof openProjectCard === 'function') {
+                openProjectCard(selectedProjectId);
+            }
+        }
+
         loadSpec(newSpec.id); 
     } catch (e) { 
         console.error(e); 
@@ -341,6 +351,16 @@ function copySpecToProject(sourceSpec, sourceProjectId, sourceProjectName) {
         save();
         closeModal('selectSpecModal');
         showToast("Спецификация скопирована");
+
+        // Если карточка проекта открыта, обновляем её содержимое
+        const projectCardModal = document.getElementById('projectCardModal');
+        if (projectCardModal && !projectCardModal.classList.contains('hidden')) {
+            // Обновляем содержимое карточки проекта
+            if (typeof openProjectCard === 'function') {
+                openProjectCard(selectedProjectId);
+            }
+        }
+
         loadSpec(newSpec.id);
     } catch (e) {
         console.error(e);
@@ -603,7 +623,7 @@ function loadSpec(sid) {
 
         if (category !== currentCategory) {
             currentCategory = category;
-            tb.innerHTML += `<tr class="bg-slate-100 dark:bg-slate-800/60">
+            tb.innerHTML += `<tr class="bg-slate-100 dark:bg-slate-700">
                 <td colspan="7" class="px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300">${category}</td>
             </tr>`;
         }

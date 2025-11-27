@@ -77,20 +77,23 @@ function renderProjects() {
         const startDate = p.start || '—';
         const endDate = p.end || '—';
         const formattedProjectCost = formatNumber(projectCost);
+        const specsCount = ((db.specs || {})[p.id] || []).length;
+        const specsCountClass = specsCount > 0 ? 'text-green-600 dark:text-green-400 font-bold' : '';
         const fileUrl = p.file ? escapeAttr(p.file) : '';
         const fileIcon = p.file ? `<button data-file-url="${fileUrl}" class="project-file-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 z-10 relative cursor-pointer" title="Открыть файл"><i class="fas fa-file"></i></button>` : '<span class="text-slate-300 dark:text-slate-600"><i class="fas fa-file"></i></span>';
         tbody.innerHTML += `<tr class="border-b dark:border-slate-700 transition h-16 ${isClosed ? 'opacity-60 bg-slate-50 dark:bg-slate-800' : ''}">
             <td class="px-4 py-3">${projectYear}</td>
             <td class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">${projectNum}</td>
             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">${projectClient}</td>
+            <td class="px-4 py-3 text-center">${fileIcon}</td>
             <td class="px-4 py-3">
                 <div onclick="openProjectCard(${p.id})" class="font-bold text-blue-800 dark:text-blue-400 hover:underline cursor-pointer inline-block">${p.name}</div>
                 <div class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">${p.desc || '-'}</div>
             </td>
+            <td class="px-4 py-3 text-center ${specsCountClass}">${specsCount}</td>
+            <td class="px-4 py-3 text-center">${statusHtml}</td>
             <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 hidden md:table-cell">${startDate} <br> ${endDate}</td>
             <td class="px-4 py-3 text-right">${formattedProjectCost}</td>
-            <td class="px-4 py-3 text-center">${statusHtml}</td>
-            <td class="px-4 py-3 text-center">${fileIcon}</td>
             <td class="px-4 py-3 text-right">${actionBtn}</td>
         </tr>`; 
     }); 
@@ -275,7 +278,7 @@ function openProjectCard(id) {
             const specSumDisplay = formatCurrency(specSum);
             const statusBadge = s.status === 'committed' ? '<span class="text-red-500 font-bold text-xs">Списана</span>' : '<span class="text-green-600 font-bold text-xs">В работе</span>'; 
             tbody.innerHTML += `<tr class="border-b dark:border-slate-700 last:border-0">
-                <td class="px-4 py-2 font-medium">${s.name}</td>
+                <td class="px-4 py-2 font-medium"><span onclick="openSpecFromProject(${p.id}, '${s.id}')" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer hover:underline">${s.name}</span></td>
                 <td class="px-4 py-2 text-center">${statusBadge}</td>
                 <td class="px-4 py-2 text-center">${s.items.length}</td>
                 <td class="px-4 py-2 text-right">${specSumDisplay}</td>
@@ -284,13 +287,25 @@ function openProjectCard(id) {
     } 
     document.getElementById('pcTotalSpecsCost').textContent = formatCurrency(totalProjectSum); 
     
-    // Показываем/скрываем кнопку удаления в зависимости от настройки
+    // Показываем/скрываем кнопки в зависимости от статуса проекта
+    const isClosed = p.status === 'closed';
+
     const deleteBtn = document.getElementById('btnDeleteProject');
     if (deleteBtn) {
         deleteBtn.classList.toggle('hidden', !deleteProjectsEnabled);
     }
-    
-    switchProjectTab('info'); 
+
+    const saveBtn = document.getElementById('btnSaveProject');
+    if (saveBtn) {
+        saveBtn.classList.toggle('hidden', isClosed);
+    }
+
+    const createSpecBtn = document.getElementById('btnCreateSpec');
+    if (createSpecBtn) {
+        createSpecBtn.classList.toggle('hidden', isClosed);
+    }
+
+    switchProjectTab('info');
     openModal('projectCardModal'); 
 }
 
@@ -401,11 +416,39 @@ function deleteProjectFromCard() {
     showToast('Проект удален');
 }
 
-function switchProjectTab(tab) { 
-    document.getElementById('pview-info').classList.add('hidden'); 
-    document.getElementById('pview-specs').classList.add('hidden'); 
-    document.getElementById('ptab-info').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer"; 
-    document.getElementById('ptab-specs').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer"; 
+function createNewSpec() {
+    const projectId = parseInt(document.getElementById('pcId').value);
+    if (!projectId) return;
+
+    // Устанавливаем текущий проект как выбранный
+    if (typeof selectedProjectId !== 'undefined') {
+        selectedProjectId = projectId;
+    }
+
+    // Открываем модальное окно создания спецификации
+    if (typeof openModal === 'function') {
+        openModal('addSpecModal');
+    }
+}
+
+function openSpecFromProject(projectId, specId) {
+    // Закрываем карточку проекта
+    closeModal('projectCardModal');
+
+    // Переключаемся на вкладку спецификаций
+    switchTab('specs');
+
+    // Выбираем проект и спецификацию
+    if (typeof selectSpecAndLoad === 'function') {
+        selectSpecAndLoad(projectId, specId);
+    }
+}
+
+function switchProjectTab(tab) {
+    document.getElementById('pview-info').classList.add('hidden');
+    document.getElementById('pview-specs').classList.add('hidden');
+    document.getElementById('ptab-info').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer";
+    document.getElementById('ptab-specs').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer";
     document.getElementById(`pview-${tab}`).classList.remove('hidden');
     document.getElementById(`ptab-${tab}`).className = "modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600 font-bold cursor-pointer";
 }

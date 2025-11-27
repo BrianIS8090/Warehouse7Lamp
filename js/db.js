@@ -18,7 +18,7 @@ function normalizeCloudData(cloudData) {
     // Преобразуем items: объект {id: item} -> массив [item, item, ...]
     if (cloudData.items) {
         if (Array.isArray(cloudData.items)) {
-            normalized.items = cloudData.items.filter(Boolean); // Убираем null/undefined
+            normalized.items = cloudData.items.filter(Boolean);
         } else {
             normalized.items = Object.values(cloudData.items).filter(Boolean);
         }
@@ -57,9 +57,13 @@ function normalizeCloudData(cloudData) {
         normalized.rolePermissions = cloudData.rolePermissions;
     }
     
-    // activityLogs остаётся массивом
-    if (cloudData.activityLogs && Array.isArray(cloudData.activityLogs)) {
-        normalized.activityLogs = cloudData.activityLogs.filter(Boolean);
+    // Преобразуем activityLogs
+    if (cloudData.activityLogs) {
+        if (Array.isArray(cloudData.activityLogs)) {
+            normalized.activityLogs = cloudData.activityLogs.filter(Boolean);
+        } else {
+            normalized.activityLogs = Object.values(cloudData.activityLogs).filter(Boolean);
+        }
     }
     
     // Преобразуем commercialRequests
@@ -88,6 +92,32 @@ function normalizeCloudData(cloudData) {
     return normalized;
 }
 
+// Преобразует массив в объект с ключами-ID для Firebase
+function arrayToObject(arr) {
+    const obj = {};
+    if (Array.isArray(arr)) {
+        arr.forEach(item => {
+            if (item && item.id) {
+                obj[item.id] = item;
+            }
+        });
+    }
+    return obj;
+}
+
+// Преобразует объект/массив из Firebase в объект с ключами-ID
+function toObjectById(data) {
+    if (!data) return {};
+    if (Array.isArray(data)) {
+        const obj = {};
+        data.filter(Boolean).forEach(item => {
+            if (item && item.id) obj[item.id] = item;
+        });
+        return obj;
+    }
+    return { ...data };
+}
+
 async function init(force = false) { 
     showLoader(true); 
     return new Promise(async (resolve) => {
@@ -97,20 +127,17 @@ async function init(force = false) {
             if (snapshot.exists()) { 
                 const cloudData = snapshot.val();
                 // Всегда загружаем актуальные данные из облака
-                // Если были несохранённые изменения — они теряются (приоритет у облачных данных)
                 if (hasUnsavedChanges || hasPendingChanges()) {
                     console.warn('Локальные изменения перезаписаны облачными данными');
                 }
                 db = normalizeCloudData(cloudData); 
                 localStorage.setItem('wms_v4_data', JSON.stringify(db)); 
                 hasUnsavedChanges = false;
-                clearPendingChanges(); // Очищаем pending при загрузке из облака
+                clearPendingChanges();
                 
-                // Обновляем данные текущего пользователя, если он авторизован
+                // Обновляем данные текущего пользователя
                 if (typeof currentUser !== 'undefined' && currentUser && currentUser.id && db.users && db.users[currentUser.id]) {
-                    // Обновляем текущего пользователя актуальными данными из облака
                     currentUser = { id: currentUser.id, ...db.users[currentUser.id] };
-                    // Обновляем права, если они изменились
                     if (typeof initUserPermissions === 'function' && typeof firebase?.auth === 'object') {
                         const auth = firebase.auth();
                         if (auth && auth.currentUser) {
@@ -141,10 +168,8 @@ async function init(force = false) {
             db.movements.forEach((m, idx) => { if(!m.id) m.id = 'mig_' + Date.now() + '_' + idx; });
         }
         
-        // Миграция: добавляем updatedAt к существующим записям без этого поля
         migrateAddUpdatedAt();
 
-        // Восстанавливаем выбранный режим пагинации из localStorage
         const savedPerPage = localStorage.getItem('warehouseItemsPerPage');
         if (savedPerPage === 'all') {
             itemsPerPage = null;
@@ -152,15 +177,12 @@ async function init(force = false) {
             itemsPerPage = parseInt(savedPerPage) || 20;
         }
         
-        // Восстанавливаем настройку массового выбора
         const savedMassSel = localStorage.getItem('settings_massSelection');
         massSelectionEnabled = savedMassSel === 'true';
         
-        // Восстанавливаем настройку удаления проектов
         const savedDeleteProjects = localStorage.getItem('settings_deleteProjects');
         deleteProjectsEnabled = savedDeleteProjects === 'true';
 
-        // Загружаем и применяем настройки UI
         if (typeof loadUISettings === 'function') {
             loadUISettings();
         }
@@ -169,7 +191,6 @@ async function init(force = false) {
         }
 
         updatePaginationButtons();
-        
         refreshAll(); 
         updateSyncUI(); 
     } catch(e) { 
@@ -185,10 +206,8 @@ async function init(force = false) {
             if(!db.calculations) db.calculations = [];
             if(!db.companySettings) db.companySettings = {};
             showToast("Оффлайн режим (ошибка сети)");
-            // В оффлайн режиме не очищаем pendingChanges - они синхронизируются позже
         }
         
-        // Восстанавливаем выбранный режим пагинации из localStorage
         const savedPerPage = localStorage.getItem('warehouseItemsPerPage');
         if (savedPerPage === 'all') {
             itemsPerPage = null;
@@ -196,15 +215,12 @@ async function init(force = false) {
             itemsPerPage = parseInt(savedPerPage) || 20;
         }
 
-        // Восстанавливаем настройку массового выбора
         const savedMassSel = localStorage.getItem('settings_massSelection');
         massSelectionEnabled = savedMassSel === 'true';
         
-        // Восстанавливаем настройку удаления проектов
         const savedDeleteProjects = localStorage.getItem('settings_deleteProjects');
         deleteProjectsEnabled = savedDeleteProjects === 'true';
 
-        // Загружаем и применяем настройки UI (catch block)
         if (typeof loadUISettings === 'function') {
             loadUISettings();
         }
@@ -213,7 +229,6 @@ async function init(force = false) {
         }
 
         updatePaginationButtons();
-        
         refreshAll(); 
     } finally { 
         showLoader(false); 
@@ -230,156 +245,190 @@ async function syncWithCloud() {
     
     const hasPending = hasPendingChanges();
     if (!hasPending && !hasUnsavedChanges) {
-        if (!confirm("Изменений не было. Перезаписать облако текущими данными?")) return;
-        // Если пользователь подтвердил — делаем полную синхронизацию
-        showLoader(true);
-        try {
-            await dbRef.set(db);
-            hasUnsavedChanges = false;
-            updateSyncUI();
-            showToast("Данные полностью перезаписаны в облаке!");
-        } catch(e) {
-            alert("Ошибка сохранения! " + e.message);
-        } finally {
-            showLoader(false);
-        }
-        return;
+        if (!confirm("Изменений не было. Принудительно синхронизировать?")) return;
     }
     
     showLoader(true); 
+    
     try { 
-        // Собираем все изменения в один объект для batch-обновления
-        const updates = {};
+        // ШАГ 1: Загружаем актуальные данные из Firebase
+        const snapshot = await dbRef.get();
+        let cloudData = {};
+        
+        if (snapshot.exists()) {
+            cloudData = snapshot.val();
+        }
+        
+        // Преобразуем облачные данные в объекты по ID (для удобства слияния)
+        let mergedItems = toObjectById(cloudData.items);
+        let mergedProjects = toObjectById(cloudData.projects);
+        let mergedMovements = toObjectById(cloudData.movements);
+        let mergedSpecs = cloudData.specs || {};
+        let mergedUsers = cloudData.users || {};
+        let mergedRolePermissions = cloudData.rolePermissions || {};
+        let mergedCommercialRequests = toObjectById(cloudData.commercialRequests);
+        let mergedCalculations = toObjectById(cloudData.calculations);
+        let mergedActivityLogs = toObjectById(cloudData.activityLogs);
+        let mergedCompanySettings = cloudData.companySettings || {};
+        
         let changesCount = 0;
         
-        // Обрабатываем items
+        // ШАГ 2: Применяем локальные изменения поверх облачных данных
+        
+        // --- ITEMS ---
+        // Применяем обновления
         for (const id of pendingChanges.items.updated) {
-            const item = db.items.find(i => String(i.id) === id);
-            if (item) {
-                updates['items/' + id] = item;
+            const localItem = db.items.find(i => String(i.id) === id);
+            if (localItem) {
+                mergedItems[id] = localItem;
                 changesCount++;
             }
         }
+        // Применяем удаления
         for (const id of pendingChanges.items.deleted) {
-            updates['items/' + id] = null; // null = удаление в Firebase
+            delete mergedItems[id];
             changesCount++;
         }
         
-        // Обрабатываем projects
+        // --- PROJECTS ---
         for (const id of pendingChanges.projects.updated) {
-            const project = db.projects.find(p => String(p.id) === id);
-            if (project) {
-                updates['projects/' + id] = project;
+            const localItem = db.projects.find(i => String(i.id) === id);
+            if (localItem) {
+                mergedProjects[id] = localItem;
                 changesCount++;
             }
         }
         for (const id of pendingChanges.projects.deleted) {
-            updates['projects/' + id] = null;
+            delete mergedProjects[id];
             changesCount++;
         }
         
-        // Обрабатываем specs (объект, не массив)
-        for (const id of pendingChanges.specs.updated) {
-            if (db.specs[id]) {
-                updates['specs/' + id] = db.specs[id];
-                changesCount++;
-            }
-        }
-        for (const id of pendingChanges.specs.deleted) {
-            updates['specs/' + id] = null;
-            changesCount++;
-        }
-        
-        // Обрабатываем movements
+        // --- MOVEMENTS ---
         for (const id of pendingChanges.movements.updated) {
-            const movement = db.movements.find(m => String(m.id) === id);
-            if (movement) {
-                updates['movements/' + id] = movement;
+            const localItem = db.movements.find(i => String(i.id) === id);
+            if (localItem) {
+                mergedMovements[id] = localItem;
                 changesCount++;
             }
         }
         for (const id of pendingChanges.movements.deleted) {
-            updates['movements/' + id] = null;
+            delete mergedMovements[id];
             changesCount++;
         }
         
-        // Обрабатываем users (объект)
-        if (pendingChanges.users && (pendingChanges.users.updated.size > 0 || pendingChanges.users.deleted.size > 0)) {
-            // Синхронизируем весь объект users, т.к. это объект с ключами-ID
-            if (db.users && Object.keys(db.users).length > 0) {
-                updates['users'] = db.users;
+        // --- SPECS ---
+        for (const id of pendingChanges.specs.updated) {
+            if (db.specs[id]) {
+                mergedSpecs[id] = db.specs[id];
                 changesCount++;
             }
         }
-        
-        // Обрабатываем rolePermissions (синхронизируем целиком)
-        if (pendingChanges.rolePermissions === true) {
-            if (db.rolePermissions && Object.keys(db.rolePermissions).length > 0) {
-                updates['rolePermissions'] = db.rolePermissions;
-                changesCount++;
-            }
+        for (const id of pendingChanges.specs.deleted) {
+            delete mergedSpecs[id];
+            changesCount++;
         }
         
-        // Обрабатываем commercialRequests
+        // --- COMMERCIAL REQUESTS ---
         if (pendingChanges.commercialRequests) {
             for (const id of pendingChanges.commercialRequests.updated) {
-                const request = db.commercialRequests.find(r => String(r.id) === id);
-                if (request) {
-                    updates['commercialRequests/' + id] = request;
+                const localItem = db.commercialRequests.find(i => String(i.id) === id);
+                if (localItem) {
+                    mergedCommercialRequests[id] = localItem;
                     changesCount++;
                 }
             }
             for (const id of pendingChanges.commercialRequests.deleted) {
-                updates['commercialRequests/' + id] = null;
+                delete mergedCommercialRequests[id];
                 changesCount++;
             }
         }
         
-        // Обрабатываем calculations
+        // --- CALCULATIONS ---
         if (pendingChanges.calculations) {
             for (const id of pendingChanges.calculations.updated) {
-                const calc = db.calculations.find(c => String(c.id) === id);
-                if (calc) {
-                    updates['calculations/' + id] = calc;
+                const localItem = db.calculations.find(i => String(i.id) === id);
+                if (localItem) {
+                    mergedCalculations[id] = localItem;
                     changesCount++;
                 }
             }
             for (const id of pendingChanges.calculations.deleted) {
-                updates['calculations/' + id] = null;
+                delete mergedCalculations[id];
                 changesCount++;
             }
         }
         
-        // Обрабатываем companySettings (синхронизируем целиком)
-        if (pendingChanges.companySettings === true) {
-            if (db.companySettings && Object.keys(db.companySettings).length > 0) {
-                updates['companySettings'] = db.companySettings;
+        // --- USERS ---
+        if (pendingChanges.users && (pendingChanges.users.updated.size > 0 || pendingChanges.users.deleted.size > 0)) {
+            // Для users применяем изменения по ID
+            for (const id of pendingChanges.users.updated) {
+                if (db.users && db.users[id]) {
+                    mergedUsers[id] = db.users[id];
+                    changesCount++;
+                }
+            }
+            for (const id of pendingChanges.users.deleted) {
+                delete mergedUsers[id];
                 changesCount++;
             }
         }
         
-        // Обрабатываем activityLogs (всегда синхронизируем, т.к. логи добавляются часто)
-        if (db.activityLogs && Array.isArray(db.activityLogs) && db.activityLogs.length > 0) {
-            updates['activityLogs'] = db.activityLogs;
+        // --- ROLE PERMISSIONS ---
+        if (pendingChanges.rolePermissions === true && db.rolePermissions) {
+            mergedRolePermissions = db.rolePermissions;
             changesCount++;
         }
         
-        if (changesCount > 0) {
-            // Инкрементальное обновление через Firebase update()
-            await dbRef.update(updates);
-            clearPendingChanges();
-            hasUnsavedChanges = false;
-            updateSyncUI();
-            showToast(`Синхронизировано ${changesCount} изменений!`);
-        } else if (hasUnsavedChanges) {
-            // Fallback: если есть флаг изменений, но нет конкретных — полная синхронизация
-            await dbRef.set(db);
-            hasUnsavedChanges = false;
-            updateSyncUI();
-            showToast("Данные сохранены в облаке!");
+        // --- COMPANY SETTINGS ---
+        if (pendingChanges.companySettings === true && db.companySettings) {
+            mergedCompanySettings = db.companySettings;
+            changesCount++;
         }
+        
+        // --- ACTIVITY LOGS ---
+        if (pendingChanges.activityLogs === true && db.activityLogs) {
+            // Добавляем новые логи к существующим
+            db.activityLogs.forEach(log => {
+                if (log && log.id) {
+                    mergedActivityLogs[log.id] = log;
+                }
+            });
+            changesCount++;
+        }
+        
+        // ШАГ 3: Формируем итоговые данные для сохранения
+        const dataToSync = {
+            items: mergedItems,
+            projects: mergedProjects,
+            movements: mergedMovements,
+            specs: mergedSpecs,
+            users: mergedUsers,
+            rolePermissions: mergedRolePermissions,
+            commercialRequests: mergedCommercialRequests,
+            calculations: mergedCalculations,
+            activityLogs: mergedActivityLogs,
+            companySettings: mergedCompanySettings
+        };
+        
+        console.log('Syncing merged data. Changes count:', changesCount);
+        
+        // ШАГ 4: Сохраняем в Firebase
+        await dbRef.set(dataToSync);
+        
+        // ШАГ 5: Обновляем локальную базу актуальными данными
+        db = normalizeCloudData(dataToSync);
+        localStorage.setItem('wms_v4_data', JSON.stringify(db));
+        
+        clearPendingChanges();
+        hasUnsavedChanges = false;
+        updateSyncUI();
+        refreshAll();
+        
+        showToast(`Синхронизировано! (${changesCount} изменений)`);
+        
     } catch(e) { 
-        alert("Ошибка сохранения! " + e.message); 
+        console.error('Sync error:', e);
+        alert("Ошибка сохранения: " + e.message); 
     } finally { 
         showLoader(false); 
     } 
@@ -388,12 +437,9 @@ async function syncWithCloud() {
 function save(updateUI = true) { 
     localStorage.setItem('wms_v4_data', JSON.stringify(db)); 
     hasUnsavedChanges = true; 
-    // Invalidate reserves cache when data changes
     reservesCacheTimestamp = 0;
     updateSyncUI(); 
-    // Only refresh UI if explicitly requested (for performance)
     if (updateUI) {
-        // Use requestAnimationFrame to batch DOM updates
         requestAnimationFrame(() => {
             refreshAll();
         });
@@ -404,19 +450,12 @@ function updateSyncUI() {
     const btn = document.getElementById('syncBtn'); 
     const txt = document.getElementById('syncText');
     
-    // Подсчитываем количество ожидающих изменений
     let changesCount = 0;
     if (typeof pendingChanges !== 'undefined') {
         for (const collection of Object.values(pendingChanges)) {
-            if (
-                collection &&
-                typeof collection === 'object' &&
-                collection.updated instanceof Set &&
-                collection.deleted instanceof Set
-            ) {
+            if (collection && typeof collection === 'object' && collection.updated instanceof Set && collection.deleted instanceof Set) {
                 changesCount += collection.updated.size + collection.deleted.size;
             } else if (collection === true) {
-                // Булевы флаги (rolePermissions, activityLogs) считаем как одно изменение
                 changesCount += 1;
             }
         }
@@ -464,22 +503,19 @@ function seedData(){
     }; 
 }
 
-// Миграция: добавляет updatedAt к существующим записям для инкрементальной синхронизации
 function migrateAddUpdatedAt() {
     const now = Date.now();
     let migrated = false;
     
-    // Миграция items
     if (db.items && db.items.length > 0) {
         db.items.forEach(item => {
             if (!item.updatedAt) {
-                item.updatedAt = item.id || now; // Используем id как timestamp, т.к. id = Date.now()
+                item.updatedAt = item.id || now;
                 migrated = true;
             }
         });
     }
     
-    // Миграция projects
     if (db.projects && db.projects.length > 0) {
         db.projects.forEach(project => {
             if (!project.updatedAt) {
@@ -489,11 +525,9 @@ function migrateAddUpdatedAt() {
         });
     }
     
-    // Миграция movements
     if (db.movements && db.movements.length > 0) {
         db.movements.forEach(movement => {
             if (!movement.updatedAt) {
-                // Для movements id может быть строкой типа 'mov_1234567890'
                 const numericId = typeof movement.id === 'string' 
                     ? parseInt(movement.id.replace(/\D/g, '')) 
                     : movement.id;
@@ -503,7 +537,6 @@ function migrateAddUpdatedAt() {
         });
     }
     
-    // Миграция specs (объект)
     if (db.specs && typeof db.specs === 'object') {
         Object.values(db.specs).forEach(specList => {
             if (Array.isArray(specList)) {
@@ -520,7 +553,6 @@ function migrateAddUpdatedAt() {
         });
     }
     
-    // Сохраняем если была миграция
     if (migrated) {
         localStorage.setItem('wms_v4_data', JSON.stringify(db));
         console.log('Migration: updatedAt added to existing records');
@@ -528,18 +560,17 @@ function migrateAddUpdatedAt() {
 }
 
 function refreshAll(){ 
-        renderCategoryList(); 
-        renderWarehouse(); 
-        renderDatalists(); 
-        renderProjects(); 
-        if(selectedProjectId){
-            renderSpecProjectList();
-        } 
-        if(selectedSpecId) loadSpec(selectedSpecId);
+    renderCategoryList(); 
+    renderWarehouse(); 
+    renderDatalists(); 
+    renderProjects(); 
+    if(selectedProjectId){
+        renderSpecProjectList();
+    } 
+    if(selectedSpecId) loadSpec(selectedSpecId);
     renderHistoryTable(); 
     renderDashboard();
     if(typeof renderCommercialRequestsList === 'function') {
         renderCommercialRequestsList();
     }
 }
-

@@ -493,6 +493,11 @@ function logActivity(action, entityType, entityId, entityName, changes = null) {
         db.activityLogs = db.activityLogs.slice(0, 5000);
     }
     
+    // Помечаем для синхронизации
+    if (typeof pendingChanges !== 'undefined') {
+        pendingChanges.activityLogs = true;
+    }
+    
     console.log('Activity logged:', log);
 }
 

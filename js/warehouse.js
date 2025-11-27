@@ -25,23 +25,33 @@ function getReserve(itemId) {
     return reservesCache[itemId] || 0;
 }
 
-function renderCategoryList() { 
-    if (!db || !db.items) return; 
-    
-    const items = db.items; 
-    const list = document.getElementById('categoryList'); 
+function renderCategoryList() {
+    if (!db || !db.items) return;
+
+    const items = db.items;
+    const list = document.getElementById('categoryList');
     if (!list) return;
+
+    const q = document.getElementById('categorySearch').value.toLowerCase().trim();
 
     const totalUnique = items.length;
     const totalUnits = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
     const formattedTotalUnique = formatNumber(totalUnique);
     const formattedTotalUnits = formatNumber(totalUnits);
-    
-    const cats = [...new Set(items.map(i => i.cat))].sort((a, b) => {
+
+    let cats = [...new Set(items.map(i => i.cat))].sort((a, b) => {
         const labelA = (a || '').toLowerCase();
         const labelB = (b || '').toLowerCase();
         return labelA.localeCompare(labelB, 'ru');
-    }); 
+    });
+
+    // Фильтруем категории по поисковому запросу
+    if (q.length > 0) {
+        cats = cats.filter(c => {
+            const displayName = (c || 'Без категории').toLowerCase();
+            return displayName.includes(q);
+        });
+    } 
 
     const catCounts = items.reduce((acc, item) => {
         const key = item.cat;
@@ -55,7 +65,7 @@ function renderCategoryList() {
     const badgeClass = isActive => isActive ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-300';
 
     let html = `
-        <div class="p-3 mb-2 rounded-lg bg-slate-100 dark:bg-slate-700/60 border border-slate-200 dark:border-slate-600">
+        <div class="p-3 mb-2 rounded-lg bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 mr-5">
             <div class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-300 tracking-wide">Уникальных товаров</div>
             <div class="text-2xl font-extrabold text-slate-800 dark:text-white">${formattedTotalUnique}</div>
             <div class="text-[11px] text-slate-500 dark:text-slate-300 mt-1">Суммарный остаток: ${formattedTotalUnits}</div>
@@ -116,6 +126,11 @@ const debouncedRenderWarehouse = debounce(() => {
     currentPage = 1; // Сбрасываем на первую страницу при поиске
     // Не сбрасываем выбор при поиске, чтобы пользователь мог выбрать товары на разных страницах
     renderWarehouse();
+}, 300);
+
+// Debounced version of renderCategoryList for search input
+const debouncedRenderCategoryList = debounce(() => {
+    renderCategoryList();
 }, 300);
 
 // Pagination Functions
@@ -650,5 +665,80 @@ function saveQuickMove() {
     save();
     closeModal('quickMoveModal');
     showToast('Операция выполнена');
+}
+
+// Экспорт отображаемых товаров в Excel (CSV)
+function exportVisibleItemsToExcel() {
+    if (!db || !db.items) {
+        showToast('База данных не загружена');
+        return;
+    }
+
+    const items = db.items;
+    const q = document.getElementById('warehouseSearch').value.toLowerCase().trim();
+
+    // Фильтруем товары по тем же правилам, что и renderWarehouse
+    let filtered = [];
+    const isAllCats = currentFilterCat === 'all';
+    const hasSearch = q.length > 0;
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!isAllCats && item.cat !== currentFilterCat) continue;
+        if (hasSearch && !item.name.toLowerCase().includes(q) && !item.manuf.toLowerCase().includes(q)) continue;
+        filtered.push(item);
+    }
+
+    // Сортируем по тем же правилам, что и renderWarehouse
+    const key = sortState.warehouse.key;
+    const dir = sortState.warehouse.dir;
+    const isAsc = dir === 'asc';
+
+    // Pre-calculate reserves for sorting (cache optimization)
+    if (key === 'reserve') {
+        getReserve(0); // This will populate the cache
+    }
+
+    if (key === 'name' || key === 'manuf' || key === 'cat') {
+        filtered.sort((a, b) => {
+            const va = (a[key] || '').toLowerCase();
+            const vb = (b[key] || '').toLowerCase();
+            return isAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+        });
+    } else if (key === 'reserve') {
+        filtered.sort((a, b) => {
+            const va = getReserve(a.id) || 0;
+            const vb = getReserve(b.id) || 0;
+            return isAsc ? va - vb : vb - va;
+        });
+    } else {
+        filtered.sort((a, b) => {
+            const va = a[key] || 0;
+            const vb = b[key] || 0;
+            return isAsc ? va - vb : vb - va;
+        });
+    }
+
+    // Генерируем CSV
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "ID,Название,Производитель,Категория,Ед.изм,Остаток,Резерв,Свободно,Цена\r\n";
+
+    filtered.forEach(function(item) {
+        const res = getReserve(item.id) || 0;
+        const free = item.qty - res;
+        const row = `${item.id},"${item.name}","${item.manuf || ''}","${item.cat || 'Разное'}","${item.unit || 'шт.'}",${item.qty},${res},${free},${item.cost || 0}`;
+        csvContent += row + "\r\n";
+    });
+
+    // Скачиваем файл
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "warehouse_visible_items.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    showToast(`Экспортировано ${filtered.length} товаров`);
 }
 
