@@ -1,9 +1,17 @@
 // --- AUTHENTICATION ---
 
+// Проверка, авторизован ли пользователь
+function isAuthenticated() {
+    if (isDemoMode) return true;
+    if (auth && auth.currentUser) return true;
+    return false;
+}
+
 if (auth) { 
     auth.onAuthStateChanged((user) => { 
         if (user) { 
             document.getElementById('loginScreen').classList.add('hidden'); 
+            document.getElementById('appContainer').classList.remove('hidden');
             document.getElementById('connectionStatus').innerText = "Online (Cloud)"; 
             document.getElementById('connectionStatus').classList.add("text-green-600"); 
             
@@ -25,7 +33,8 @@ if (auth) {
             }); 
         } else { 
             if(!isDemoMode) { 
-                document.getElementById('loginScreen').classList.remove('hidden'); 
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appContainer').classList.add('hidden');
                 document.getElementById('globalLoader').style.display = 'none'; 
             } 
         } 
@@ -69,7 +78,8 @@ function login() {
 
 function demoLogin() { 
     isDemoMode = true; 
-    document.getElementById('loginScreen').classList.add('hidden'); 
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appContainer').classList.remove('hidden');
     document.getElementById('connectionStatus').innerText = "Demo (Local)"; 
     document.getElementById('connectionStatus').classList.add("text-orange-500"); 
     
@@ -115,6 +125,10 @@ function logout() {
         logActivity('user_logout', 'auth', currentUser.id, currentUser.email, null);
         save(false);
     }
+    
+    // Скрываем UI перед выходом
+    document.getElementById('appContainer').classList.add('hidden');
+    document.getElementById('loginScreen').classList.remove('hidden');
     
     if (isDemoMode) { 
         isDemoMode = false; 

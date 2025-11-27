@@ -119,6 +119,13 @@ function toObjectById(data) {
 }
 
 async function init(force = false) { 
+    // Проверка авторизации
+    if (!isAuthenticated()) {
+        console.warn('Попытка загрузки данных без авторизации');
+        showLoader(false);
+        return Promise.reject('Требуется авторизация');
+    }
+    
     showLoader(true); 
     return new Promise(async (resolve) => {
     try { 
@@ -238,6 +245,12 @@ async function init(force = false) {
 }
 
 async function syncWithCloud() { 
+    // Проверка авторизации
+    if (!isAuthenticated()) {
+        alert("Требуется авторизация для синхронизации с облаком.");
+        return;
+    }
+    
     if (isDemoMode) { 
         alert("В демо-режиме сохранение в облако недоступно."); 
         return; 

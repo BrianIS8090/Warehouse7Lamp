@@ -81,13 +81,25 @@ function renderProjects() {
         const specsCountClass = specsCount > 0 ? 'text-green-600 dark:text-green-400 font-bold' : '';
         const fileUrl = p.file ? escapeAttr(p.file) : '';
         const fileIcon = p.file ? `<button data-file-url="${fileUrl}" class="project-file-btn text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 z-10 relative cursor-pointer" title="Открыть файл"><i class="fas fa-file"></i></button>` : '<span class="text-slate-300 dark:text-slate-600"><i class="fas fa-file"></i></span>';
+        
+        // Чеклист документации
+        const hasDoc = p.hasDocumentation === true;
+        const docCheckboxClass = hasDoc 
+            ? 'documentation-checkbox checked w-5 h-5 rounded-full border-2 border-green-500 bg-green-500 text-white flex items-center justify-center cursor-pointer hover:bg-green-600 transition-colors' 
+            : 'documentation-checkbox w-5 h-5 rounded-full border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 cursor-pointer hover:border-green-400 transition-colors';
+        const docCheckboxIcon = hasDoc ? '<i class="fas fa-check text-xs"></i>' : '';
+        const docCheckbox = `<button onclick="event.stopPropagation(); toggleProjectDocumentation(${p.id})" class="${docCheckboxClass}" title="${hasDoc ? 'Документация есть' : 'Документации нет'}">${docCheckboxIcon}</button>`;
+        
         tbody.innerHTML += `<tr class="border-b dark:border-slate-700 transition h-16 ${isClosed ? 'opacity-60 bg-slate-50 dark:bg-slate-800' : ''}">
             <td class="px-4 py-3">${projectYear}</td>
             <td class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">${projectNum}</td>
             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">${projectClient}</td>
             <td class="px-4 py-3 text-center">${fileIcon}</td>
             <td class="px-4 py-3">
-                <div onclick="openProjectCard(${p.id})" class="font-bold text-blue-800 dark:text-blue-400 hover:underline cursor-pointer inline-block">${p.name}</div>
+                <div class="flex items-center gap-2">
+                    ${docCheckbox}
+                    <div onclick="openProjectCard(${p.id})" class="font-bold text-blue-800 dark:text-blue-400 hover:underline cursor-pointer inline-block flex-1">${p.name}</div>
+                </div>
                 <div class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">${p.desc || '-'}</div>
             </td>
             <td class="px-4 py-3 text-center ${specsCountClass}">${specsCount}</td>
@@ -451,6 +463,33 @@ function switchProjectTab(tab) {
     document.getElementById('ptab-specs').className = "modal-tab px-2 py-1 text-slate-500 cursor-pointer";
     document.getElementById(`pview-${tab}`).classList.remove('hidden');
     document.getElementById(`ptab-${tab}`).className = "modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600 font-bold cursor-pointer";
+}
+
+function toggleProjectDocumentation(projectId) {
+    // Проверка прав
+    if (typeof hasPermission === 'function' && !hasPermission('projects', 'edit')) {
+        showToast('Нет прав на редактирование проектов');
+        return;
+    }
+    
+    const p = db.projects.find(x => x.id === projectId);
+    if (!p) return;
+    
+    // Переключаем состояние документации
+    p.hasDocumentation = !p.hasDocumentation;
+    p.updatedAt = Date.now();
+    markChanged('projects', p.id);
+    
+    // Логирование
+    if (typeof logActivity === 'function') {
+        logActivity('project_documentation_toggle', 'project', p.id, p.name, {
+            hasDocumentation: p.hasDocumentation
+        });
+    }
+    
+    save();
+    renderProjects();
+    showToast(p.hasDocumentation ? 'Документация отмечена' : 'Документация снята');
 }
 
 function filterProjects() {

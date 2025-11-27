@@ -209,6 +209,7 @@ function createNewProject() {
         cost:parseFloat(document.getElementById('newPrCost').value)||0, 
         file:document.getElementById('newPrFile').value || '',
         status:'active',
+        hasDocumentation: false,
         updatedAt: now
     }; 
     
