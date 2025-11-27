@@ -16,6 +16,11 @@ function switchTab(t) {
         closeDropdownMenu();
     }
     
+    // Обновляем активный пункт мобильного меню
+    if (typeof updateMobileMenuActiveItem === 'function') {
+        updateMobileMenuActiveItem(t);
+    }
+    
     if(t==='projects') renderProjects(); 
     if(t==='specs') renderSpecProjectList();
     if(t==='commercial') renderCommercialRequestsList();
@@ -23,6 +28,10 @@ function switchTab(t) {
         renderCategoryList(); 
         updatePaginationButtons(); // Обновляем кнопки при переключении на вкладку
         renderWarehouse();
+        // Обновляем мобильный выбор категорий
+        if (typeof updateMobileCategorySelect === 'function') {
+            updateMobileCategorySelect();
+        }
     } 
     if(t==='movements') {
         renderHistoryTable();

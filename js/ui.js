@@ -1039,6 +1039,95 @@ function closeDropdownMenu() {
     }
 }
 
+// ===== МОБИЛЬНОЕ МЕНЮ =====
+
+// Открыть мобильное меню
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    
+    if (menu && overlay) {
+        menu.classList.add('show');
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Закрыть мобильное меню
+function closeMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    
+    if (menu && overlay) {
+        menu.classList.remove('show');
+        overlay.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+// Обновить активный пункт мобильного меню
+function updateMobileMenuActiveItem(tabName) {
+    const menuItems = document.querySelectorAll('.mobile-menu-item[data-tab]');
+    menuItems.forEach(item => {
+        if (item.dataset.tab === tabName) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+// ===== МОБИЛЬНЫЙ ВЫБОР КАТЕГОРИЙ =====
+
+// Обновить выпадающий список категорий для мобильных
+function updateMobileCategorySelect() {
+    const select = document.getElementById('mobileCategorySelect');
+    if (!select || !db || !db.items) return;
+    
+    const items = db.items;
+    let cats = [...new Set(items.map(i => i.cat))].sort((a, b) => {
+        const labelA = (a || '').toLowerCase();
+        const labelB = (b || '').toLowerCase();
+        return labelA.localeCompare(labelB, 'ru');
+    });
+    
+    // Сохраняем текущее значение
+    const currentValue = select.value || 'all';
+    
+    // Очищаем и заполняем
+    select.innerHTML = '<option value="all">Все категории</option>';
+    
+    cats.forEach(cat => {
+        const displayName = cat || 'Без категории';
+        const catValue = cat === undefined ? '' : cat;
+        const option = document.createElement('option');
+        option.value = catValue;
+        option.textContent = displayName;
+        if (currentFilterCat === cat || (currentFilterCat === 'all' && catValue === 'all')) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    
+    // Восстанавливаем выбранную категорию
+    if (currentFilterCat === 'all') {
+        select.value = 'all';
+    } else if (currentFilterCat !== undefined) {
+        select.value = currentFilterCat;
+    }
+}
+
+// Обработчик выбора категории в мобильном селекте
+function filterCatMobile(value) {
+    if (value === 'all') {
+        filterCat('all');
+    } else if (value === '') {
+        filterCat(undefined);
+    } else {
+        filterCat(value);
+    }
+}
+
 // --- UI CUSTOMIZATION FUNCTIONS ---
 
 // Load UI settings from localStorage

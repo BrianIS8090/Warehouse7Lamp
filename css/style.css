@@ -429,3 +429,650 @@ body { font-family: 'Inter', sans-serif; }
 .gantt-legend-design {
     background-color: #f97316;
 }
+
+/* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
+
+/* Мобильное меню */
+.mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.mobile-menu-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100%;
+    background: var(--color-white);
+    z-index: 101;
+    transition: right 0.3s ease;
+    box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+.dark .mobile-menu {
+    background: var(--color-slate-800);
+}
+
+.mobile-menu.show {
+    right: 0;
+}
+
+.mobile-menu-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-slate-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.dark .mobile-menu-header {
+    border-bottom-color: var(--color-slate-700);
+}
+
+.mobile-menu-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.mobile-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 8px;
+    color: var(--color-slate-600);
+    font-weight: 500;
+    transition: background 0.2s;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    font-size: 15px;
+}
+
+.dark .mobile-menu-item {
+    color: var(--color-slate-300);
+}
+
+.mobile-menu-item:hover,
+.mobile-menu-item.active {
+    background: var(--color-blue-50);
+    color: var(--color-blue-600);
+}
+
+.dark .mobile-menu-item:hover,
+.dark .mobile-menu-item.active {
+    background: var(--color-slate-700);
+    color: var(--color-blue-400);
+}
+
+.mobile-menu-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* Кнопка бургер-меню */
+.mobile-menu-btn {
+    display: none;
+    padding: 8px;
+    background: none;
+    border: none;
+    color: var(--color-slate-600);
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.dark .mobile-menu-btn {
+    color: var(--color-slate-300);
+}
+
+/* Мобильный выбор категорий (выпадающий список) */
+.mobile-category-select {
+    display: none;
+    width: calc(100% - 16px);
+    margin: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-slate-300);
+    border-radius: 10px;
+    background: var(--color-white);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-slate-700);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-category-select:focus {
+    outline: none;
+    border-color: var(--color-blue-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark .mobile-category-select {
+    background-color: var(--color-slate-700);
+    border-color: var(--color-slate-600);
+    color: var(--color-slate-200);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== MEDIA QUERIES ДЛЯ МОБИЛЬНЫХ ===== */
+@media (max-width: 768px) {
+    /* Показываем кнопку бургер-меню */
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    /* Скрываем десктопную навигацию */
+    .desktop-nav {
+        display: none !important;
+    }
+    
+    /* Скрываем старую мобильную навигацию */
+    header nav.md\\:hidden {
+        display: none !important;
+    }
+    
+    /* Заголовок header компактнее */
+    header .font-bold.text-xl span:not(#connectionStatus):not(#userEmailText) {
+        display: none;
+    }
+    
+    /* Кнопки header компактнее */
+    #settingsBtn, button[onclick="toggleTheme()"] {
+        padding: 6px;
+    }
+    
+    button[onclick="init()"] {
+        display: none !important;
+    }
+    
+    /* ===== СКЛАД: МОБИЛЬНАЯ ТАБЛИЦА ===== */
+    
+    /* Показываем мобильный выбор категорий */
+    .mobile-category-select {
+        display: block;
+        margin-bottom: 12px;
+    }
+    
+    /* Скрываем панель категорий на мобильных */
+    #categoryPanel {
+        display: none !important;
+    }
+    
+    /* Таблица склада во всю ширину */
+    #view-warehouse {
+        padding: 8px;
+        flex-direction: column;
+    }
+    
+    #warehouseTableContainer {
+        width: 100%;
+    }
+    
+    /* Скрываем ненужные колонки в таблице склада */
+    #warehouseTableBody td:nth-child(1), /* checkbox */
+    #warehouseTableBody td:nth-child(2), /* действия */
+    #warehouseTableBody td:nth-child(3), /* фото */
+    #warehouseTableBody td:nth-child(5), /* производитель */
+    #warehouseTableBody td:nth-child(6), /* категория */
+    #warehouseTableBody td:nth-child(9), /* резерв */
+    #warehouseTableBody td:nth-child(10), /* свободно */
+    #warehouseTableBody td:nth-child(11), /* цена */
+    #view-warehouse thead th:nth-child(1),
+    #view-warehouse thead th:nth-child(2),
+    #view-warehouse thead th:nth-child(3),
+    #view-warehouse thead th:nth-child(5),
+    #view-warehouse thead th:nth-child(6),
+    #view-warehouse thead th:nth-child(9),
+    #view-warehouse thead th:nth-child(10),
+    #view-warehouse thead th:nth-child(11) {
+        display: none !important;
+    }
+    
+    /* Показываем только название, ед.изм, количество */
+    #view-warehouse thead th:nth-child(4),
+    #view-warehouse thead th:nth-child(7),
+    #view-warehouse thead th:nth-child(8) {
+        display: table-cell !important;
+    }
+    
+    #warehouseTableBody td:nth-child(4),
+    #warehouseTableBody td:nth-child(7),
+    #warehouseTableBody td:nth-child(8) {
+        display: table-cell !important;
+    }
+    
+    /* Стили для мобильной таблицы склада */
+    #warehouseTableBody td:nth-child(4) {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+    
+    #warehouseTableBody td:nth-child(7),
+    #warehouseTableBody td:nth-child(8) {
+        padding: 10px 6px;
+        font-size: 12px;
+        text-align: center;
+    }
+    
+    /* Хедер таблицы склада компактнее */
+    #warehouseTableContainer > div:first-child {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    #warehouseTableContainer > div:first-child h2 {
+        display: none;
+    }
+    
+    #warehouseTableContainer > div:first-child .flex.items-center.gap-4 {
+        width: 100%;
+    }
+    
+    #warehouseTableContainer > div:first-child .flex.items-center.gap-2 {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    /* Поиск на всю ширину */
+    #warehouseSearch {
+        width: 100%;
+        max-width: none;
+    }
+    
+    /* Кнопки экспорта/добавления компактнее */
+    #warehouseTableContainer button[onclick="exportVisibleItemsToExcel()"],
+    #warehouseTableContainer button[onclick="openCreateItemModal()"] {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
+    
+    /* Скрываем текст в кнопках на мобильных */
+    #warehouseTableContainer button[onclick="exportVisibleItemsToExcel()"] .mr-2 + *,
+    #warehouseTableContainer button[onclick="openCreateItemModal()"] .mr-2 + * {
+        display: none;
+    }
+    
+    /* Убираем margin у иконок */
+    #warehouseTableContainer button .mr-2 {
+        margin-right: 0;
+    }
+    
+    /* Строки таблицы на мобильных - кликабельная область */
+    #warehouseTableBody tr {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    #warehouseTableBody tr:active {
+        background-color: var(--color-blue-100);
+    }
+    
+    .dark #warehouseTableBody tr:active {
+        background-color: var(--color-slate-600);
+    }
+    
+    /* Пагинация компактнее */
+    #view-warehouse .p-2.border-t {
+        padding: 8px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    /* ===== КАРТОЧКА ТОВАРА: МОБИЛЬНАЯ ===== */
+    #itemCardModal .modal-content {
+        width: 95%;
+        max-width: none;
+        height: 95vh;
+        margin: 2.5vh auto;
+    }
+    
+    /* Форма карточки товара вертикально */
+    #mview-info .grid.grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    #mview-info .grid.grid-cols-2 > div {
+        grid-column: span 1 !important;
+    }
+    
+    /* Колонки цены и единиц измерения друг под другом */
+    #mview-info .grid.grid-cols-2.gap-4 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* Кнопки в карточке товара */
+    #mview-info .mt-8.flex {
+        flex-direction: column-reverse;
+        gap: 12px;
+    }
+    
+    #mview-info .mt-8.flex button {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    /* ===== ПРОЕКТЫ: МОБИЛЬНАЯ ТАБЛИЦА ===== */
+    #view-projects {
+        padding: 8px;
+    }
+    
+    #view-projects .bg-white.rounded-lg {
+        border-radius: 8px;
+    }
+    
+    /* Скрываем ненужные колонки в таблице проектов */
+    #projectsTableBody td:nth-child(1), /* год */
+    #projectsTableBody td:nth-child(3), /* клиент */
+    #projectsTableBody td:nth-child(4), /* файл */
+    #projectsTableBody td:nth-child(6), /* спецификации */
+    #projectsTableBody td:nth-child(7), /* статус */
+    #projectsTableBody td:nth-child(8), /* даты */
+    #projectsTableBody td:nth-child(9), /* бюджет */
+    #projectsTableBody td:nth-child(10), /* действия */
+    #view-projects thead th:nth-child(1),
+    #view-projects thead th:nth-child(3),
+    #view-projects thead th:nth-child(4),
+    #view-projects thead th:nth-child(6),
+    #view-projects thead th:nth-child(7),
+    #view-projects thead th:nth-child(8),
+    #view-projects thead th:nth-child(9),
+    #view-projects thead th:nth-child(10) {
+        display: none !important;
+    }
+    
+    /* Показываем только номер заявки и название */
+    #view-projects thead th:nth-child(2),
+    #view-projects thead th:nth-child(5) {
+        display: table-cell !important;
+    }
+    
+    #projectsTableBody td:nth-child(2),
+    #projectsTableBody td:nth-child(5) {
+        display: table-cell !important;
+    }
+    
+    /* Стили для мобильной таблицы проектов */
+    #projectsTableBody td:nth-child(2) {
+        padding: 14px 10px;
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
+        color: var(--color-blue-600);
+    }
+    
+    .dark #projectsTableBody td:nth-child(2) {
+        color: var(--color-blue-400);
+    }
+    
+    #projectsTableBody td:nth-child(5) {
+        padding: 14px 10px;
+        font-size: 14px;
+    }
+    
+    /* Скрываем описание проекта на мобильных */
+    #projectsTableBody td:nth-child(5) .text-xs {
+        display: none;
+    }
+    
+    /* Скрываем чекбокс документации на мобильных */
+    #projectsTableBody td:nth-child(5) .documentation-checkbox {
+        display: none;
+    }
+    
+    /* Скрываем flex контейнер с чекбоксом, оставляем только название */
+    #projectsTableBody td:nth-child(5) .flex.items-center.gap-2 {
+        display: block;
+    }
+    
+    /* Строки таблицы проектов - кликабельные */
+    #projectsTableBody tr {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    #projectsTableBody tr:active {
+        background-color: var(--color-blue-50);
+    }
+    
+    .dark #projectsTableBody tr:active {
+        background-color: var(--color-slate-700);
+    }
+    
+    /* Хедер проектов компактнее */
+    #view-projects .p-4.border-b {
+        padding: 12px;
+    }
+    
+    #view-projects .p-4.border-b h2 {
+        font-size: 16px;
+    }
+    
+    #view-projects .p-4.border-b .flex.justify-between {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    #view-projects .p-4.border-b .flex.items-center.gap-2 {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #view-projects .p-4.border-b .flex-1.max-w-md {
+        max-width: none;
+    }
+    
+    /* ===== МОДАЛЬНЫЕ ОКНА НА МОБИЛЬНЫХ ===== */
+    .modal-content {
+        width: 95% !important;
+        max-width: none !important;
+        margin: 8px;
+        max-height: 90vh;
+    }
+    
+    /* Модальное окно создания товара */
+    #createItemModal .grid.grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    #createItemModal .grid.grid-cols-2 > div {
+        grid-column: span 1 !important;
+    }
+    
+    /* Модальное окно создания проекта */
+    #createProjectModal .grid.grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    #createProjectModal .grid.grid-cols-2 > div {
+        grid-column: span 1 !important;
+    }
+    
+    /* Карточка проекта */
+    #projectCardModal .modal-content {
+        height: 95vh;
+    }
+    
+    #projectCardModal .grid.grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+    
+    /* ===== ДАШБОРД НА МОБИЛЬНЫХ ===== */
+    #view-dashboard {
+        padding: 8px;
+    }
+    
+    #view-dashboard h2 {
+        font-size: 18px;
+        margin-bottom: 12px;
+    }
+    
+    #view-dashboard .grid.grid-cols-1.sm\\:grid-cols-2 {
+        gap: 8px;
+    }
+    
+    #view-dashboard .grid.grid-cols-1.lg\\:grid-cols-3 {
+        gap: 12px;
+    }
+    
+    /* Графики на дашборде */
+    #view-dashboard .grid.grid-cols-1.lg\\:grid-cols-2 {
+        gap: 12px;
+    }
+    
+    #view-dashboard .flex.h-96 {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    #view-dashboard .w-96 {
+        width: 100%;
+        max-height: 200px;
+    }
+    
+    /* ===== СПЕЦИФИКАЦИИ НА МОБИЛЬНЫХ ===== */
+    #view-specs {
+        padding: 8px;
+        flex-direction: column;
+    }
+    
+    #view-specs > div:first-child {
+        height: 200px;
+        width: 100%;
+    }
+    
+    #view-specs > div:last-child {
+        flex: 1;
+        width: 100%;
+    }
+    
+    #specAddPanel {
+        flex-direction: column;
+    }
+    
+    #specAddPanel input,
+    #specAddPanel button {
+        width: 100%;
+    }
+    
+    #specAddPanel .w-32 {
+        width: 100%;
+    }
+    
+    #specAddPanel .w-10 {
+        width: 100%;
+        height: 44px;
+    }
+    
+    /* ===== РАБОТА СО СКЛАДОМ НА МОБИЛЬНЫХ ===== */
+    #view-movements {
+        padding: 8px;
+        flex-direction: column;
+    }
+    
+    #view-movements > div {
+        width: 100% !important;
+        height: auto !important;
+    }
+    
+    #view-movements > div:first-child {
+        max-height: 200px;
+    }
+    
+    #view-movements > div:last-child {
+        max-height: 150px;
+    }
+    
+    /* ===== КОММЕРЧЕСКИЙ ОТДЕЛ НА МОБИЛЬНЫХ ===== */
+    #view-commercial {
+        padding: 8px;
+        flex-direction: column;
+    }
+    
+    #view-commercial > div:first-child {
+        height: 200px;
+        width: 100%;
+    }
+    
+    #view-commercial > div:last-child {
+        width: 100%;
+    }
+    
+    /* ===== ПОМОЩЬ НА МОБИЛЬНЫХ ===== */
+    #view-help {
+        padding: 8px;
+    }
+    
+    #view-help .grid.grid-cols-1.lg\\:grid-cols-4 {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    #view-help .lg\\:col-span-1 {
+        order: -1;
+        margin-bottom: 12px;
+    }
+    
+    #view-help .lg\\:col-span-1 .sticky {
+        position: relative;
+        top: 0;
+    }
+    
+    /* FAB кнопка синхронизации */
+    .sync-fab {
+        bottom: 16px;
+        right: 16px;
+        padding: 10px 16px;
+        font-size: 12px;
+    }
+    
+    /* Toast уведомления */
+    .toast {
+        bottom: 70px;
+        right: 16px;
+        left: 16px;
+        max-width: none;
+    }
+}
+
+/* Планшеты */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .mobile-menu-btn {
+        display: block;
+    }
+    
+    .desktop-nav {
+        display: none !important;
+    }
+    
+    .mobile-category-select {
+        display: block;
+        margin-bottom: 12px;
+    }
+    
+    #categoryPanel {
+        display: none !important;
+    }
+}

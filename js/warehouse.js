@@ -100,7 +100,12 @@ function renderCategoryList() {
     if (dl) { 
         dl.innerHTML = ''; 
         cats.forEach(c => dl.innerHTML += `<option value="${c}">`); 
-    } 
+    }
+    
+    // Обновляем мобильный select категорий
+    if (typeof updateMobileCategorySelect === 'function') {
+        updateMobileCategorySelect();
+    }
 }
 
 function filterCat(cat) { 

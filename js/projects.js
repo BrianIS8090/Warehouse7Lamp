@@ -90,15 +90,15 @@ function renderProjects() {
         const docCheckboxIcon = hasDoc ? '<i class="fas fa-check text-xs"></i>' : '';
         const docCheckbox = `<button onclick="event.stopPropagation(); toggleProjectDocumentation(${p.id})" class="${docCheckboxClass}" title="${hasDoc ? 'Документация есть' : 'Документации нет'}">${docCheckboxIcon}</button>`;
         
-        tbody.innerHTML += `<tr class="border-b dark:border-slate-700 transition h-16 ${isClosed ? 'opacity-60 bg-slate-50 dark:bg-slate-800' : ''}">
+        tbody.innerHTML += `<tr onclick="openProjectCard(${p.id})" class="border-b dark:border-slate-700 transition h-16 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer ${isClosed ? 'opacity-60 bg-slate-50 dark:bg-slate-800' : ''}">
             <td class="px-4 py-3">${projectYear}</td>
             <td class="px-4 py-3 font-bold text-slate-700 dark:text-slate-200">${projectNum}</td>
             <td class="px-4 py-3 text-slate-600 dark:text-slate-300">${projectClient}</td>
-            <td class="px-4 py-3 text-center">${fileIcon}</td>
+            <td class="px-4 py-3 text-center" onclick="event.stopPropagation()">${fileIcon}</td>
             <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                     ${docCheckbox}
-                    <div onclick="openProjectCard(${p.id})" class="font-bold text-blue-800 dark:text-blue-400 hover:underline cursor-pointer inline-block flex-1">${p.name}</div>
+                    <div class="font-bold text-blue-800 dark:text-blue-400 hover:underline cursor-pointer inline-block flex-1">${p.name}</div>
                 </div>
                 <div class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">${p.desc || '-'}</div>
             </td>
@@ -106,7 +106,7 @@ function renderProjects() {
             <td class="px-4 py-3 text-center">${statusHtml}</td>
             <td class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 hidden md:table-cell">${startDate} <br> ${endDate}</td>
             <td class="px-4 py-3 text-right">${formattedProjectCost}</td>
-            <td class="px-4 py-3 text-right">${actionBtn}</td>
+            <td class="px-4 py-3 text-right" onclick="event.stopPropagation()">${actionBtn}</td>
         </tr>`; 
     }); 
 }
