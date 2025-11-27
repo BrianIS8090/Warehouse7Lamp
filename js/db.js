@@ -574,6 +574,9 @@ function migrateAddUpdatedAt() {
 
 function refreshAll(){ 
     renderCategoryList(); 
+    if(typeof updateMobileCategorySelect === 'function') {
+        updateMobileCategorySelect();
+    }
     renderWarehouse(); 
     renderDatalists(); 
     renderProjects(); 

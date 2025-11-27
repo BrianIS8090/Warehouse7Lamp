@@ -108,7 +108,48 @@ function filterCat(cat) {
     currentPage = 1; // Сбрасываем на первую страницу при смене категории
     selectedItems.clear(); // Сбрасываем выбор при смене категории
     renderCategoryList(); 
+    updateMobileCategorySelect(); // Обновляем мобильный селект
     renderWarehouse(); 
+}
+
+// Обновление мобильного списка категорий
+function updateMobileCategorySelect() {
+    if (!db || !db.items) return;
+    
+    const select = document.getElementById('mobileCategorySelect');
+    if (!select) return;
+    
+    const items = db.items;
+    let cats = [...new Set(items.map(i => i.cat))].sort((a, b) => {
+        const labelA = (a || '').toLowerCase();
+        const labelB = (b || '').toLowerCase();
+        return labelA.localeCompare(labelB, 'ru');
+    });
+    
+    // Сохраняем текущее значение
+    const currentValue = select.value;
+    
+    // Очищаем и заполняем список
+    select.innerHTML = '<option value="all">Все категории</option>';
+    cats.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c || '';
+        option.textContent = c || 'Без категории';
+        select.appendChild(option);
+    });
+    
+    // Восстанавливаем выбранное значение
+    if (currentValue) {
+        select.value = currentValue === 'all' ? 'all' : (currentValue || '');
+    } else {
+        select.value = currentFilterCat === 'all' ? 'all' : (currentFilterCat || '');
+    }
+}
+
+// Фильтрация категорий через мобильный селект
+function filterCatMobile(value) {
+    const cat = value === 'all' ? 'all' : value;
+    filterCat(cat);
 }
 
 function setWarehouseSort(key) {
@@ -317,7 +358,7 @@ function renderWarehouse() {
             const isSelected = selectedItems.has(item.id);
             
             const checkboxCell = massSelectionEnabled ? `
-                <td class="px-2 py-3 text-center" onclick="event.stopPropagation()">
+                <td class="px-2 py-3 text-center hidden md:table-cell" onclick="event.stopPropagation()">
                     <input type="checkbox" class="item-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer" 
                            data-item-id="${item.id}" 
                            ${isSelected ? 'checked' : ''} 
@@ -351,21 +392,21 @@ function renderWarehouse() {
             
             row.innerHTML = `
                 ${checkboxCell}
-                <td class="px-2 py-3 text-center">
+                <td class="px-2 py-3 text-center hidden md:table-cell">
                     <div class="flex gap-1 justify-center">
                         ${moveInBtn}
                         ${moveOutBtn}
                     </div>
                 </td>
-                <td class="px-4 py-3 text-center">${img}</td>
+                <td class="px-4 py-3 text-center hidden md:table-cell">${img}</td>
                 <td class="px-4 py-3 font-medium ${nameColor} group-hover:underline">${item.name}${fileIcon}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden md:table-cell">${item.manuf || ''}</td>
                 <td class="px-4 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.cat || 'Разное'}</td>
-                <td class="px-4 py-3 text-center text-slate-500 dark:text-slate-400 hidden lg:table-cell">${item.unit || 'шт.'}</td>
+                <td class="px-4 py-3 text-center text-slate-500 dark:text-slate-400">${item.unit || 'шт.'}</td>
                 <td class="px-4 py-3 text-center font-bold text-slate-700 dark:text-slate-300">${qtyDisplay}</td>
                 <td class="px-4 py-3 text-center text-orange-600 dark:text-orange-400 hidden sm:table-cell" title="Резерв">${resDisplay}</td>
-                <td class="px-4 py-3 text-center font-bold ${freeColor}">${freeDisplay}</td>
-                <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400">${costDisplay}</td>
+                <td class="px-4 py-3 text-center font-bold ${freeColor} hidden md:table-cell">${freeDisplay}</td>
+                <td class="px-4 py-3 text-right text-sm text-slate-600 dark:text-slate-400 hidden md:table-cell">${costDisplay}</td>
             `;
             
             fragment.appendChild(row);
