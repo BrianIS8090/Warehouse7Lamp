@@ -10,6 +10,14 @@ function toggleTheme() {
         localStorage.setItem('theme', 'dark');
         document.getElementById('themeIcon').className = 'fas fa-sun';
     }
+    
+    // Переотрисовываем графики при смене темы
+    if (typeof renderCategoryChart === 'function') {
+        renderCategoryChart();
+    }
+    if (typeof renderTopItemsChart === 'function') {
+        renderTopItemsChart();
+    }
 }
 
 function toggleMassSelectionSetting(checked) {

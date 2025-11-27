@@ -78,6 +78,9 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
     <!-- Custom Styles -->
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -197,30 +200,70 @@
                     <div class="text-2xl font-bold text-slate-800 dark:text-white" id="dashActiveProj">0</div>
                     <div class="text-xs text-slate-400 mt-2">На сумму: <span id="dashActiveBudget">0</span> ₽</div>
                 </div>
-                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border-l-4 border-red-500 transition-colors">
-                    <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Мало товара</div>
-                    <div class="text-2xl font-bold text-slate-800 dark:text-white" id="dashLowStockCount">0</div>
-                </div>
-                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow border-l-4 border-orange-500 transition-colors">
-                    <div class="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase mb-1">Горят сроки (7 дн)</div>
-                    <div class="text-2xl font-bold text-slate-800 dark:text-white" id="dashDeadlineCount">0</div>
-                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors flex flex-col">
                     <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2"><i class="fas fa-clock text-orange-500"></i> Срочные проекты</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="p-2">Проект</th><th class="p-2 text-right">Срок</th></tr></thead><tbody id="dashDeadlineTable"></tbody></table></div>
+                    <div class="overflow-y-auto flex-1"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase sticky top-0"><tr><th class="p-2">Проект</th><th class="p-2 text-right">Срок</th></tr></thead><tbody id="dashDeadlineTable"></tbody></table></div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors">
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors flex flex-col">
                     <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2"><i class="fas fa-exclamation-triangle text-red-500"></i> Требуют внимания</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="p-2">Товар</th><th class="p-2 text-right">Остаток</th></tr></thead><tbody id="dashLowStockTable"></tbody></table></div>
+                    <div class="overflow-y-auto flex-1"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase sticky top-0"><tr><th class="p-2">Товар</th><th class="p-2 text-right">Остаток</th></tr></thead><tbody id="dashLowStockTable"></tbody></table></div>
                 </div>
 
-                 <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors">
+                 <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 transition-colors flex flex-col">
                     <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-500"></i> Последние операции</h3>
-                    <div class="overflow-x-auto"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="p-2">Дата</th><th class="p-2">Товар</th><th class="p-2 text-right">Кол-во</th><th class="p-2 text-right"></th></tr></thead><tbody id="dashLastMovTable"></tbody></table></div>
+                    <div class="overflow-y-auto flex-1"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase sticky top-0"><tr><th class="p-2">Дата</th><th class="p-2">Товар</th><th class="p-2 text-right">Кол-во</th><th class="p-2 text-right"></th></tr></thead><tbody id="dashLastMovTable"></tbody></table></div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 mt-6 transition-colors w-full">
+                <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                    <i class="fas fa-tasks text-blue-500"></i> График проектов
+                </h3>
+                <div id="ganttContainer"></div>
+            </div>
+
+            <!-- Новые графики -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <!-- График 1: Стоимость товара в категориях -->
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow transition-colors overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <i class="fas fa-pie-chart text-purple-500"></i> Стоимость по категориям
+                        </h3>
+                    </div>
+                    <div class="flex h-96">
+                        <!-- Левая часть: График -->
+                        <div class="flex-1 p-4" style="position: relative;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <!-- Правая часть: Легенда -->
+                        <div class="w-96 border-l border-slate-200 dark:border-slate-700 p-4 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+                            <div id="categoryLegend" class="space-y-2 text-sm"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- График 2: Топ 10 товаров по стоимости -->
+                <div class="bg-white dark:bg-slate-800 rounded-lg shadow transition-colors overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <h3 class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-500"></i> Топ 10 товаров по стоимости
+                        </h3>
+                    </div>
+                    <div class="flex h-96">
+                        <!-- Левая часть: График -->
+                        <div class="flex-1 p-4" style="position: relative;">
+                            <canvas id="topItemsChart"></canvas>
+                        </div>
+                        <!-- Правая часть: Легенда -->
+                        <div class="w-96 border-l border-slate-200 dark:border-slate-700 p-4 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+                            <div id="topItemsLegend" class="space-y-2 text-sm"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1560,6 +1603,7 @@
     </div>
     </div><!-- Закрытие appContainer -->
 
+    
     <!-- Modules -->
     <script src="env.js"></script>
     <script src="js/config.js"></script>

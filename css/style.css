@@ -173,6 +173,13 @@ body { font-family: 'Inter', sans-serif; }
     }
 }
 
+/* Контейнеры таблиц на панели дашборда для прокрутки */
+#dashDeadlineTable,
+#dashLowStockTable,
+#dashLastMovTable {
+    /* Таблицы будут иметь естественную высоту внутри контейнера с прокруткой */
+}
+
 /* Чеклист документации проекта */
 .documentation-checkbox {
     flex-shrink: 0;
@@ -199,4 +206,226 @@ body { font-family: 'Inter', sans-serif; }
     100% {
         transform: scale(1);
     }
+}
+
+/* Стили для диаграммы Ганта (кастомная реализация) */
+#ganttContainer {
+    width: 100%;
+    max-height: 350px;
+    overflow: auto;
+}
+
+.gantt-wrapper {
+    min-width: 100%;
+}
+
+.gantt-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.gantt-label-cell {
+    width: 720px;
+    min-width: 720px;
+    max-width: 720px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #334155;
+    border-right: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: sticky;
+    left: 0;
+    z-index: 9;
+}
+
+.dark .gantt-label-cell {
+    color: #e2e8f0;
+    border-right-color: #334155;
+}
+
+.gantt-label-num {
+    font-weight: 700;
+    font-size: 12px;
+    color: #3b82f6;
+    min-width: 60px;
+    padding: 2px 6px;
+    background-color: #dbeafe;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.dark .gantt-label-num {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+}
+
+.gantt-label-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dark .gantt-label-name {
+    color: #e2e8f0;
+}
+
+.gantt-bars-cell {
+    position: relative;
+    padding: 0;
+}
+
+.gantt-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #ffffff;
+}
+
+.dark .gantt-header-row {
+    background-color: #1e293b;
+}
+
+.gantt-header-row .gantt-label-cell {
+    height: 32px;
+    vertical-align: bottom;
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    background-color: #ffffff;
+}
+
+.dark .gantt-header-row .gantt-label-cell {
+    background-color: #1e293b;
+}
+
+.gantt-header-row .gantt-bars-cell {
+    height: 32px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .gantt-header-row .gantt-bars-cell {
+    border-bottom-color: #334155;
+}
+
+.gantt-timeline {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.gantt-month {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 8px 6px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    border-left: 1px solid #e2e8f0;
+    box-sizing: border-box;
+}
+
+.gantt-month:first-child {
+    border-left: none;
+}
+
+.dark .gantt-month {
+    color: #94a3b8;
+    border-left-color: #334155;
+}
+
+.gantt-row {
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+.gantt-row:hover {
+    background-color: #f8fafc;
+}
+
+.dark .gantt-row:hover {
+    background-color: #1e293b;
+}
+
+.gantt-row .gantt-bars-cell {
+    height: 32px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.dark .gantt-row .gantt-bars-cell {
+    border-bottom-color: #1e293b;
+}
+
+.gantt-bars-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.gantt-grid-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: #e2e8f0;
+}
+
+.dark .gantt-grid-line {
+    background-color: #334155;
+}
+
+.gantt-bar {
+    position: absolute;
+    height: 18px;
+    top: 7px;
+    border-radius: 3px;
+    min-width: 4px;
+}
+
+.gantt-bar-project {
+    background-color: #3b82f6;
+    z-index: 1;
+}
+
+.gantt-bar-design {
+    background-color: #f97316;
+    z-index: 2;
+}
+
+.gantt-legend {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0 4px 0;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.dark .gantt-legend {
+    color: #94a3b8;
+}
+
+.gantt-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gantt-legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+.gantt-legend-project {
+    background-color: #3b82f6;
+}
+
+.gantt-legend-design {
+    background-color: #f97316;
 }
