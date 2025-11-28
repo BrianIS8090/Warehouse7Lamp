@@ -1,4 +1,45 @@
 // --- MODALS & DIALOGS ---
+
+// Функция для открытия ссылки на товар у поставщика
+function openSupplierLink(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    const url = field.value.trim();
+    if (!url) {
+        showToast('Ссылка не указана');
+        return;
+    }
+    
+    // Проверяем, что это валидный URL
+    let validUrl = url;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        validUrl = 'https://' + url;
+    }
+    
+    try {
+        window.open(validUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+        console.error('Ошибка при открытии ссылки:', error);
+        showToast('Ошибка при открытии ссылки');
+    }
+}
+
+// Функция для обновления состояния кнопки открытия ссылки
+function updateSupplierLinkButton(fieldId, buttonId) {
+    const field = document.getElementById(fieldId);
+    const button = document.getElementById(buttonId);
+    
+    if (!field || !button) return;
+    
+    const url = field.value.trim();
+    if (url && url.length > 0) {
+        button.disabled = false;
+    } else {
+        button.disabled = true;
+    }
+}
+
 function openCreateItemModal() { 
     document.getElementById('newItemName').value=''; 
     document.getElementById('newItemManuf').value='';
@@ -8,12 +49,16 @@ function openCreateItemModal() {
     document.getElementById('newItemChars').value='';
     document.getElementById('newItemImg').value='';
     document.getElementById('newItemFile').value='';
+    document.getElementById('newItemSupplierLink').value='';
     
     // Reset autocomplete state
     const results = document.getElementById('newItemNameResults');
     const warning = document.getElementById('newItemDuplicateWarning');
     if (results) results.classList.add('hidden');
     if (warning) warning.classList.add('hidden');
+    
+    // Обновляем состояние кнопки открытия ссылки
+    updateSupplierLinkButton('newItemSupplierLink', 'btnOpenNewSupplierLink');
     
     openModal('createItemModal'); 
 }
@@ -135,6 +180,7 @@ function createNewItem() {
         chars:document.getElementById('newItemChars').value, 
         img:document.getElementById('newItemImg').value, 
         file:document.getElementById('newItemFile').value,
+        supplierLink: document.getElementById('newItemSupplierLink').value || '',
         updatedAt: now // Для инкрементальной синхронизации
     };
     
@@ -168,6 +214,16 @@ function createNewItem() {
     save(); 
     closeModal('createItemModal');
     showToast('Товар создан');
+    
+    // Если калькуляция открыта, автоматически добавляем товар в калькуляцию
+    const calcModal = document.getElementById('calculationEditorModal');
+    if (calcModal && !calcModal.classList.contains('hidden')) {
+        // Проверяем, доступна ли функция добавления товара в калькуляцию
+        if (typeof addItemToCalculation === 'function') {
+            addItemToCalculation(i.id);
+            showToast('Товар добавлен в калькуляцию');
+        }
+    }
     
     // Refresh movements page if visible
     if (typeof renderMovementsItemsTable === 'function') {
@@ -244,6 +300,7 @@ function openItemCard(id, viewOnly = false) {
     document.getElementById('cardChars').value = i.chars; 
     document.getElementById('cardImg').value = i.img || ''; 
     document.getElementById('cardFile').value = i.file || '';
+    document.getElementById('cardSupplierLink').value = i.supplierLink || '';
     
     // Отображаем дату последнего изменения цены
     const priceDateEl = document.getElementById('cardPriceChangeDate');
@@ -260,6 +317,9 @@ function openItemCard(id, viewOnly = false) {
     
     // Устанавливаем режим просмотра
     setItemCardViewMode(viewOnly);
+    
+    // Обновляем состояние кнопки открытия ссылки
+    updateSupplierLinkButton('cardSupplierLink', 'btnOpenSupplierLink');
     
     updateCardPreview(); 
     
@@ -332,7 +392,7 @@ function openQuickMoveFromCard(type) {
 }
 
 function setItemCardViewMode(viewOnly) {
-    const inputs = ['cardName', 'cardManuf', 'cardCat', 'cardUnit', 'cardCost', 'cardChars', 'cardImg', 'cardFile'];
+    const inputs = ['cardName', 'cardManuf', 'cardCat', 'cardUnit', 'cardCost', 'cardChars', 'cardImg', 'cardFile', 'cardSupplierLink'];
     const saveBtn = document.querySelector('#itemCardModal button[onclick*="saveItemFromCard"]');
     const deleteBtn = document.querySelector('#itemCardModal button[onclick*="deleteItemFromCard"]');
     
@@ -486,12 +546,13 @@ function saveItemFromCard() {
     i.chars = document.getElementById('cardChars').value; 
     i.img = document.getElementById('cardImg').value; 
     i.file = document.getElementById('cardFile').value;
+    i.supplierLink = document.getElementById('cardSupplierLink').value || '';
     i.updatedAt = Date.now(); // Для инкрементальной синхронизации
     markChanged('items', i.id); 
     
     // Логирование
     if (typeof logActivity === 'function' && typeof trackChanges === 'function') {
-        const changes = trackChanges(oldItem, i, ['name', 'manuf', 'cat', 'cost', 'unit', 'chars']);
+        const changes = trackChanges(oldItem, i, ['name', 'manuf', 'cat', 'cost', 'unit', 'chars', 'supplierLink']);
         if (changes) {
             logActivity('item_edit', 'item', i.id, i.name, changes);
         }

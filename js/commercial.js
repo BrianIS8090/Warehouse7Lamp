@@ -826,12 +826,13 @@ function renderCalculationItems() {
     
     // Подготавливаем данные с категориями и сортировкой
     const itemsWithData = calcEditorItems.map((item, idx) => {
-        let name, unit, cost, itemId = null, category = 'Нестандартные';
+        let name, unit, cost, itemId = null, category = 'Нестандартные', manufacturerUrl = null;
         
         if (item.isCustom) {
             name = item.name || 'Нестандартная позиция';
             unit = item.unit || 'шт.';
             cost = parseFloat(item.cost) || 0;
+            manufacturerUrl = item.manufacturerUrl || null;
         } else {
             itemId = item.itemId;
             const baseItem = (db.items || []).find(i => i.id === item.itemId);
@@ -848,7 +849,7 @@ function renderCalculationItems() {
             }
         }
         
-        return { idx, name, unit, cost, itemId, category, qty: item.qty || 0, isCustom: item.isCustom };
+        return { idx, name, unit, cost, itemId, category, qty: item.qty || 0, isCustom: item.isCustom, manufacturerUrl };
     });
     
     // Сортируем по категории, затем по алфавиту
@@ -895,6 +896,11 @@ function renderCalculationItems() {
             ? `<button onclick="openItemCardFromCalc(${item.itemId})" class="text-blue-500 hover:text-blue-700 mr-1" title="Карточка товара"><i class="fas fa-eye"></i></button>`
             : '';
         
+        // Кнопка перехода на сайт производителя для нестандартных компонентов
+        const manufacturerLinkBtn = (item.isCustom && item.manufacturerUrl) 
+            ? `<a href="${item.manufacturerUrl}" target="_blank" rel="noopener noreferrer" class="text-green-500 hover:text-green-700 mr-1" title="Перейти на сайт производителя"><i class="fas fa-external-link-alt"></i></a>`
+            : '';
+        
         html += `
             <tr class="border-b dark:border-slate-700 ${rowClass}">
                 <td class="px-2 py-2 text-center text-xs text-slate-400">${rowNum}</td>
@@ -908,6 +914,7 @@ function renderCalculationItems() {
                 <td class="px-2 py-2 text-right text-sm">${formatCurrency(item.cost)}</td>
                 <td class="px-2 py-2 text-center">
                     ${viewBtn}
+                    ${manufacturerLinkBtn}
                     <button onclick="removeCalcItem(${item.idx})" class="text-red-400 hover:text-red-600">
                         <i class="fas fa-times"></i>
                     </button>
@@ -1111,6 +1118,7 @@ function openAddCalcCustomItemModal() {
     document.getElementById('calcCustomUnit').value = 'шт.';
     document.getElementById('calcCustomQty').value = '1';
     document.getElementById('calcCustomCost').value = '0';
+    document.getElementById('calcCustomManufacturerUrl').value = '';
     openModal('calcCustomItemModal');
 }
 
@@ -1119,6 +1127,7 @@ function addCalcCustomItem() {
     const unit = document.getElementById('calcCustomUnit').value;
     const qty = parseFloat(document.getElementById('calcCustomQty').value) || 1;
     const cost = parseFloat(document.getElementById('calcCustomCost').value) || 0;
+    const manufacturerUrl = document.getElementById('calcCustomManufacturerUrl').value.trim();
     
     if (!name) {
         showToast('Введите название');
@@ -1130,7 +1139,8 @@ function addCalcCustomItem() {
         name: name,
         unit: unit,
         cost: cost,
-        qty: qty
+        qty: qty,
+        manufacturerUrl: manufacturerUrl || null
     });
     
     closeModal('calcCustomItemModal');

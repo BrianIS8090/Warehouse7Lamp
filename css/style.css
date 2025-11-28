@@ -433,7 +433,9 @@ body { font-family: 'Inter', sans-serif; }
 /* Единые стили кнопок */
 .btn-blue,
 .btn-green,
-.btn-red {
+.btn-red,
+.btn-yellow,
+.btn-purple {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -471,6 +473,26 @@ body { font-family: 'Inter', sans-serif; }
 
 .btn-red:hover {
     background-color: var(--color-btn-red);
+    color: white;
+}
+
+.btn-yellow {
+    border: 2px solid #eab308;
+    color: #eab308;
+}
+
+.btn-yellow:hover {
+    background-color: #eab308;
+    color: white;
+}
+
+.btn-purple {
+    border: 2px solid #a855f7;
+    color: #a855f7;
+}
+
+.btn-purple:hover {
+    background-color: #a855f7;
     color: white;
 }
 
