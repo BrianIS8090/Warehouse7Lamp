@@ -45,8 +45,8 @@ function renderSpecProjectList() {
         // Кнопка добавления спецификации (показывается только для выбранного проекта и при наличии прав)
         const canCreateSpec = typeof hasPermission === 'function' ? hasPermission('specs', 'create') : true;
         const addButton = (isProjectSelected && canCreateSpec)
-            ? `<button onclick="event.stopPropagation(); addNewSpecToProject()" class="w-6 h-6 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded text-xs transition-colors flex-shrink-0" title="Добавить спецификацию">
-                <i class="fas fa-plus"></i>
+            ? `<button onclick="event.stopPropagation(); addNewSpecToProject()" class="w-6 h-6 flex items-center justify-center btn-blue text-xs flex-shrink-0 p-0" title="Добавить спецификацию">
+                <i class="fas fa-plus leading-none"></i>
             </button>`
             : '';
         
@@ -1008,6 +1008,104 @@ function commitSpec() {
     save();
     showToast("Материалы списаны");
     loadSpec(selectedSpecId);
+}
+
+// Экспорт спецификации в Excel
+function exportSpecToExcel() {
+    if(!selectedProjectId || !selectedSpecId) return;
+    const project = db.projects.find(p => p.id === selectedProjectId);
+    const spec = db.specs[selectedProjectId].find(s => s.id === selectedSpecId);
+    if(!project || !spec) return;
+    
+    // Получаем множитель количества спецификации
+    const specQuantity = parseFloat(spec.quantity) || 1;
+    
+    const itemsWithMeta = spec.items
+        .map((item) => {
+            if (item.isCustom) {
+                const cost = parseFloat(item.cost) || 0;
+                const baseQty = item.qty;
+                const finalQty = baseQty * specQuantity;
+                return {
+                    isCustom: true,
+                    name: item.name || 'Нестандартная позиция',
+                    unit: item.unit || '',
+                    baseQty: baseQty,
+                    qty: finalQty,
+                    cost,
+                    sum: cost * finalQty,
+                    category: 'Нестандартные изделия'
+                };
+            } else {
+                const dbItem = db.items.find(i => i.id === item.itemId);
+                if(!dbItem) return null;
+                const cost = parseFloat(dbItem.cost) || 0;
+                const baseQty = item.qty;
+                const finalQty = baseQty * specQuantity;
+                return {
+                    isCustom: false,
+                    name: dbItem.name,
+                    unit: dbItem.unit || '',
+                    baseQty: baseQty,
+                    qty: finalQty,
+                    cost,
+                    sum: cost * finalQty,
+                    category: dbItem.cat || 'Без категории'
+                };
+            }
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+            if (a.category === 'Нестандартные изделия' && b.category !== 'Нестандартные изделия') return 1;
+            if (b.category === 'Нестандартные изделия' && a.category !== 'Нестандартные изделия') return -1;
+            if (a.category === 'Нестандартные изделия' && b.category === 'Нестандартные изделия') {
+                const nameA = (a.name || '').trim();
+                const nameB = (b.name || '').trim();
+                return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
+            }
+            const catDiff = a.category.localeCompare(b.category, 'ru', { sensitivity: 'base' });
+            if (catDiff !== 0) return catDiff;
+            const nameA = (a.name || '').trim();
+            const nameB = (b.name || '').trim();
+            return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
+        });
+    
+    // Формируем CSV
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM для правильной кодировки в Excel
+    csvContent += "№,Категория,Наименование,Ед.изм,Кол-во (на ед.),Общее кол-во,Цена,Сумма\r\n";
+    
+    let rowNum = 0;
+    let total = 0;
+    let currentCategory = null;
+    
+    itemsWithMeta.forEach((item) => {
+        if(item.category !== currentCategory) {
+            currentCategory = item.category;
+            csvContent += `,"${currentCategory}",,,,,\r\n`;
+        }
+        rowNum++;
+        total += item.sum;
+        const baseQtyDisplay = (item.baseQty || 0).toString().replace('.', ',');
+        const totalQtyDisplay = (item.qty || 0).toString().replace('.', ',');
+        const priceDisplay = (item.cost || 0).toString().replace('.', ',');
+        const sumDisplay = (item.sum || 0).toString().replace('.', ',');
+        const name = item.isCustom ? `${item.name} (нестандарт)` : item.name;
+        csvContent += `${rowNum},"${item.category}","${name}","${item.unit}","${baseQtyDisplay}","${totalQtyDisplay}","${priceDisplay}","${sumDisplay}"\r\n`;
+    });
+    
+    csvContent += `,"","ИТОГО",,,,,"${total.toString().replace('.', ',')}"\r\n`;
+    
+    // Скачиваем файл
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    const fileName = `Спецификация_${spec.name.replace(/[^a-zа-яё0-9]/gi, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    
+    showToast('Спецификация экспортирована в Excel');
 }
 
 function printSpec(includeCosts = true) {

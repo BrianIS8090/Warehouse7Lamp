@@ -1153,6 +1153,215 @@ function updateCalcCoefficient() {
     renderCalculationItems();
 }
 
+// Экспорт калькуляции в Excel
+function exportCalculationToExcel() {
+    const name = document.getElementById('calcName').value.trim() || 'Калькуляция';
+    const coefficient = parseFloat(document.getElementById('calcCoefficient').value) || 1.5;
+    
+    // Подготавливаем данные с категориями и сортировкой
+    const itemsWithData = calcEditorItems.map((item, idx) => {
+        let name, unit, cost, itemId = null, category = 'Нестандартные';
+        
+        if (item.isCustom) {
+            name = item.name || 'Нестандартная позиция';
+            unit = item.unit || 'шт.';
+            cost = parseFloat(item.cost) || 0;
+        } else {
+            itemId = item.itemId;
+            const baseItem = (db.items || []).find(i => i.id === item.itemId);
+            if (!baseItem) {
+                name = `[Удалённый товар #${item.itemId}]`;
+                unit = '—';
+                cost = 0;
+                itemId = null;
+            } else {
+                name = baseItem.name;
+                unit = baseItem.unit || 'шт.';
+                cost = parseFloat(baseItem.cost) || 0;
+                category = baseItem.cat || 'Без категории';
+            }
+        }
+        
+        return { idx, name, unit, cost, itemId, category, qty: item.qty || 0, isCustom: item.isCustom };
+    });
+    
+    // Сортируем по категории, затем по алфавиту
+    itemsWithData.sort((a, b) => {
+        if (a.isCustom && !b.isCustom) return 1;
+        if (!a.isCustom && b.isCustom) return -1;
+        if (a.category !== b.category) return a.category.localeCompare(b.category, 'ru');
+        return a.name.localeCompare(b.name, 'ru');
+    });
+    
+    // Формируем CSV
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // BOM для правильной кодировки в Excel
+    csvContent += "№,Категория,Наименование,Ед.изм,Кол-во,Цена,Сумма\r\n";
+    
+    let rowNum = 0;
+    let totalCost = 0;
+    let currentCategory = '';
+    
+    itemsWithData.forEach(item => {
+        if (item.category !== currentCategory) {
+            currentCategory = item.category;
+            csvContent += `,"${currentCategory}",,,,,\r\n`;
+        }
+        
+        rowNum++;
+        const lineTotal = item.cost * item.qty;
+        totalCost += lineTotal;
+        
+        const qtyDisplay = (item.qty || 0).toString().replace('.', ',');
+        const priceDisplay = (item.cost || 0).toString().replace('.', ',');
+        const sumDisplay = lineTotal.toString().replace('.', ',');
+        
+        csvContent += `${rowNum},"${item.category}","${item.name}","${item.unit}","${qtyDisplay}","${priceDisplay}","${sumDisplay}"\r\n`;
+    });
+    
+    const finalPrice = totalCost * coefficient;
+    csvContent += `,"","ИТОГО (себестоимость)",,,,"${totalCost.toString().replace('.', ',')}"\r\n`;
+    csvContent += `,"","Коэффициент наценки: ${coefficient}",,,,\r\n`;
+    csvContent += `,"","ИТОГО (цена с наценкой)",,,,"${finalPrice.toString().replace('.', ',')}"\r\n`;
+    
+    // Скачиваем файл
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    const fileName = `Калькуляция_${name.replace(/[^a-zа-яё0-9]/gi, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    
+    showToast('Калькуляция экспортирована в Excel');
+}
+
+// Печать калькуляции
+function printCalculation() {
+    const name = document.getElementById('calcName').value.trim() || 'Калькуляция';
+    const coefficient = parseFloat(document.getElementById('calcCoefficient').value) || 1.5;
+    const lightName = document.getElementById('calcLightName').textContent || '';
+    const lightDescription = document.getElementById('calcLightDescription').textContent || '';
+    
+    // Подготавливаем данные с категориями и сортировкой
+    const itemsWithData = calcEditorItems.map((item, idx) => {
+        let name, unit, cost, itemId = null, category = 'Нестандартные';
+        
+        if (item.isCustom) {
+            name = item.name || 'Нестандартная позиция';
+            unit = item.unit || 'шт.';
+            cost = parseFloat(item.cost) || 0;
+        } else {
+            itemId = item.itemId;
+            const baseItem = (db.items || []).find(i => i.id === item.itemId);
+            if (!baseItem) {
+                name = `[Удалённый товар #${item.itemId}]`;
+                unit = '—';
+                cost = 0;
+                itemId = null;
+            } else {
+                name = baseItem.name;
+                unit = baseItem.unit || 'шт.';
+                cost = parseFloat(baseItem.cost) || 0;
+                category = baseItem.cat || 'Без категории';
+            }
+        }
+        
+        return { idx, name, unit, cost, itemId, category, qty: item.qty || 0, isCustom: item.isCustom };
+    });
+    
+    // Сортируем по категории, затем по алфавиту
+    itemsWithData.sort((a, b) => {
+        if (a.isCustom && !b.isCustom) return 1;
+        if (!a.isCustom && b.isCustom) return -1;
+        if (a.category !== b.category) return a.category.localeCompare(b.category, 'ru');
+        return a.name.localeCompare(b.name, 'ru');
+    });
+    
+    let html = '';
+    let totalCost = 0;
+    let currentCategory = '';
+    let rowNum = 0;
+    
+    itemsWithData.forEach(item => {
+        // Заголовок категории
+        if (item.category !== currentCategory) {
+            currentCategory = item.category;
+            html += `
+                <tr class="bg-slate-100 dark:bg-slate-600">
+                    <td colspan="6" class="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-200 uppercase tracking-wider">
+                        ${currentCategory}
+                    </td>
+                </tr>
+            `;
+        }
+        
+        rowNum++;
+        const lineTotal = item.cost * item.qty;
+        totalCost += lineTotal;
+        
+        html += `
+            <tr class="border-b">
+                <td class="px-2 py-2 text-center text-xs">${rowNum}</td>
+                <td class="px-2 py-2 text-sm">${item.name}</td>
+                <td class="px-2 py-2 text-center text-sm">${item.unit}</td>
+                <td class="px-2 py-2 text-center text-sm">${formatNumber(item.qty)}</td>
+                <td class="px-2 py-2 text-right text-sm">${formatCurrency(item.cost)}</td>
+                <td class="px-2 py-2 text-right text-sm font-bold">${formatCurrency(lineTotal)}</td>
+            </tr>
+        `;
+    });
+    
+    const finalPrice = totalCost * coefficient;
+    
+    const printHtml = `
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-end border-b-2 border-black pb-4 mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold uppercase">Калькуляция</h1>
+                    <div class="mt-2 text-sm">
+                        <div><strong>Название:</strong> ${name}</div>
+                        ${lightName ? `<div><strong>Светильник:</strong> ${lightName}</div>` : ''}
+                        ${lightDescription ? `<div><strong>Описание:</strong> ${lightDescription}</div>` : ''}
+                    </div>
+                </div>
+                <div class="text-right text-sm">
+                    <div>Дата: ${new Date().toLocaleDateString('ru-RU')}</div>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <h2 class="text-lg font-bold mb-3">Состав калькуляции</h2>
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b-2 border-black">
+                            <th class="p-2 text-center w-10">№</th>
+                            <th class="p-2 text-left">Наименование</th>
+                            <th class="p-2 text-center w-16">Ед.</th>
+                            <th class="p-2 text-center w-20">Кол-во</th>
+                            <th class="p-2 text-right w-24">Цена</th>
+                            <th class="p-2 text-right w-28">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>${html}</tbody>
+                </table>
+            </div>
+            
+            <div class="border-t-2 border-black pt-4 mb-8">
+                <div class="text-right space-y-2">
+                    <div class="text-lg">Себестоимость: <strong>${formatCurrency(totalCost)}</strong></div>
+                    <div class="text-sm">Коэффициент наценки: <strong>${coefficient}</strong></div>
+                    <div class="text-xl font-bold">ИТОГО: ${formatCurrency(finalPrice)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const printArea = document.getElementById('printArea');
+    printArea.innerHTML = printHtml;
+    window.print();
+}
+
 function saveCalculation() {
     const requestId = document.getElementById('calcRequestId').value;
     const proposalId = document.getElementById('calcProposalId').value;

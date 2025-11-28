@@ -311,7 +311,24 @@ function openItemCard(id, viewOnly = false) {
 }
 
 function openItemCardViewOnly(id) {
-    openItemCard(id, true);
+    // Открываем карточку в режиме редактирования, чтобы можно было редактировать товар
+    openItemCard(id, false);
+}
+
+// Открыть модальное окно прихода/списания из карточки товара
+function openQuickMoveFromCard(type) {
+    const itemId = parseInt(document.getElementById('cardId').value);
+    if (!itemId) {
+        showToast('Ошибка: не найден ID товара');
+        return;
+    }
+    
+    // Проверяем, что функция openQuickMove доступна
+    if (typeof openQuickMove === 'function') {
+        openQuickMove(itemId, type);
+    } else {
+        showToast('Функция прихода/списания недоступна');
+    }
 }
 
 function setItemCardViewMode(viewOnly) {

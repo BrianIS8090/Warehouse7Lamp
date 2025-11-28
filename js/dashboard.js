@@ -20,7 +20,7 @@ function renderDashboard() {
     const lsTable = document.getElementById('dashLowStockTable');
     if(lsTable) {
         lsTable.innerHTML = lowStockItems
-            .map(i => `<tr class="border-b dark:border-slate-700">
+            .map(i => `<tr class="border-b dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" onclick="openItemCard(${i.id})" title="Открыть карточку товара">
                 <td class="py-2 font-medium text-slate-700 dark:text-slate-300">${i.name}</td>
                 <td class="py-2 text-right font-bold text-red-600 dark:text-red-400">${formatNumber(i.free)} ${i.unit}</td>
             </tr>`).join('') || '<tr><td colspan="2" class="py-4 text-center text-slate-400 text-sm">Все в порядке</td></tr>';
@@ -46,7 +46,7 @@ function renderDashboard() {
             const daysText = diffDays < 0 ? `Просрочен на ${daysValue} дн.` : (diffDays === 0 ? 'Сегодня' : `${daysValue} дн.`);
             const colorClass = diffDays < 0 ? 'text-red-600 dark:text-red-400' : 'text-orange-500 dark:text-orange-400';
             
-            return `<tr class="border-b dark:border-slate-700"><td class="py-2 font-medium text-slate-700 dark:text-slate-300 text-sm truncate max-w-[150px]">${p.name}</td><td class="py-2 text-right font-bold ${colorClass} text-sm">${daysText}</td></tr>`;
+            return `<tr class="border-b dark:border-slate-700 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" onclick="openProjectCard(${p.id})" title="Открыть карточку проекта"><td class="py-2 font-medium text-slate-700 dark:text-slate-300 text-sm truncate max-w-[150px]">${p.name}</td><td class="py-2 text-right font-bold ${colorClass} text-sm">${daysText}</td></tr>`;
         }).join('') || '<tr><td colspan="2" class="py-4 text-center text-slate-400 text-sm">Нет срочных</td></tr>';
     }
 

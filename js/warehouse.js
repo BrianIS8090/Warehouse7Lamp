@@ -158,16 +158,16 @@ function updatePaginationButtons() {
     
     // Сбрасываем все кнопки к неактивному состоянию
     [btn20, btn100, btnAll].forEach(btn => {
-        btn.className = 'px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium';
+        btn.className = 'px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium';
     });
     
     // Активируем выбранную кнопку
     if (itemsPerPage === 20) {
-        btn20.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium';
+        btn20.className = 'px-3 py-1 btn-blue text-xs font-medium';
     } else if (itemsPerPage === 100) {
-        btn100.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium';
+        btn100.className = 'px-3 py-1 btn-blue text-xs font-medium';
     } else if (itemsPerPage === null) {
-        btnAll.className = 'px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium';
+        btnAll.className = 'px-3 py-1 btn-blue text-xs font-medium';
     }
 }
 
@@ -342,10 +342,10 @@ function renderWarehouse() {
                 canMoveOut = true;
             }
             
-            const moveInBtn = canMoveIn ? `<button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'in')" class="w-7 h-7 rounded bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 flex items-center justify-center" title="Приход">
+            const moveInBtn = canMoveIn ? `<button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'in')" class="w-7 h-7 btn-green flex items-center justify-center" title="Приход">
                             <i class="fas fa-arrow-down text-xs"></i>
                         </button>` : '';
-            const moveOutBtn = canMoveOut ? `<button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'out')" class="w-7 h-7 rounded bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 flex items-center justify-center" title="Списание">
+            const moveOutBtn = canMoveOut ? `<button onclick="event.stopPropagation(); openQuickMove(${item.id}, 'out')" class="w-7 h-7 btn-red flex items-center justify-center" title="Списание">
                             <i class="fas fa-arrow-up text-xs"></i>
                         </button>` : '';
             
@@ -664,6 +664,44 @@ function saveQuickMove() {
     
     save();
     closeModal('quickMoveModal');
+    
+    // Обновляем карточку товара, если она открыта
+    const cardIdEl = document.getElementById('cardId');
+    if (cardIdEl && parseInt(cardIdEl.value) === id) {
+        // Обновляем количество в карточке
+        const cardQtyEl = document.getElementById('cardQty');
+        if (cardQtyEl) {
+            cardQtyEl.value = item.qty;
+        }
+        
+        // Обновляем историю операций в карточке
+        const cardMovHistory = document.getElementById('cardMovHistory');
+        if (cardMovHistory) {
+            cardMovHistory.innerHTML = (db.movements || [])
+                .filter(m => m.itemId === id)
+                .slice(0, 10)
+                .map(m => {
+                    const invoiceDisplay = m.invoiceNumber ? `<span class="text-xs text-slate-600 dark:text-slate-400">${m.invoiceNumber}</span>` : '<span class="text-slate-300 dark:text-slate-600">—</span>';
+                    return `<tr class="border-b dark:border-slate-700 last:border-0">
+                        <td class="p-2 text-slate-500 dark:text-slate-400">${m.date.split(',')[0]}</td>
+                        <td class="p-2 font-bold ${m.type==='in'?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'}">${m.type==='in'?'Приход':'Списание'}</td>
+                        <td class="p-2 text-right">${typeof formatNumber === 'function' ? formatNumber(m.qty) : m.qty}</td>
+                        <td class="p-2">${invoiceDisplay}</td>
+                    </tr>`;
+                }).join('') || '<tr><td colspan="4" class="p-2 text-center text-slate-400">Нет операций</td></tr>';
+        }
+    }
+    
+    // Обновляем отображение склада, если функция доступна
+    if (typeof renderWarehouse === 'function') {
+        renderWarehouse();
+    }
+    
+    // Обновляем дашборд, если функция доступна
+    if (typeof renderDashboard === 'function') {
+        renderDashboard();
+    }
+    
     showToast('Операция выполнена');
 }
 

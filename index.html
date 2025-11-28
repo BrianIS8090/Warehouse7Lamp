@@ -36,6 +36,11 @@
             /* Base */
             --color-white: #ffffff;
             --color-black: #000000;
+            
+            /* Button Colors */
+            --color-btn-blue: #2563eb;
+            --color-btn-green: #16a34a;
+            --color-btn-red: #dc2626;
         }
     </style>
     <script>
@@ -100,8 +105,8 @@
             <p class="text-slate-500 dark:text-slate-400 mb-6 text-sm">Введите данные сотрудника</p>
             <input type="email" id="loginEmail" class="w-full border dark:border-slate-600 p-3 rounded-lg mb-3 bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="Email (admin@sklad.ru)" value="admin@sklad.ru">
             <input type="password" id="loginPass" class="w-full border dark:border-slate-600 p-3 rounded-lg mb-6 bg-slate-50 dark:bg-slate-700 dark:text-white outline-none focus:border-blue-500" placeholder="Пароль (123456)" value="123456">
-            <button onclick="login()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg mb-4">Войти (Firebase)</button>
-            <button onclick="demoLogin()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition mb-4 text-sm">Демо вход (без пароля)</button>
+            <button onclick="login()" class="w-full btn-blue py-3 font-bold shadow-lg mb-4">Войти (Firebase)</button>
+            <button onclick="demoLogin()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 rounded-full font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition mb-4 text-sm">Демо вход (без пароля)</button>
             <div id="loginError" class="p-3 bg-red-50 text-red-600 rounded text-sm font-bold hidden border border-red-100 text-left"></div>
             <div id="techInfo" class="text-[10px] text-slate-500 mt-4 font-mono"></div>
         </div>
@@ -292,9 +297,9 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="deleteSelectedItems()" id="btnDeleteSelected" class="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 whitespace-nowrap hidden" title="Удалить выбранные"><i class="fas fa-trash mr-2"></i><span id="selectedCount">0</span></button>
-                        <button onclick="exportVisibleItemsToExcel()" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 whitespace-nowrap" title="Экспорт отображаемых товаров"><i class="fas fa-file-excel mr-2"></i>Экспорт</button>
-                        <button onclick="openCreateItemModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Товар</button>
+                        <button onclick="deleteSelectedItems()" id="btnDeleteSelected" class="btn-red px-4 py-2 text-sm whitespace-nowrap hidden" title="Удалить выбранные"><i class="fas fa-trash mr-2"></i><span id="selectedCount">0</span></button>
+                        <button onclick="exportVisibleItemsToExcel()" class="btn-green px-4 py-2 text-sm whitespace-nowrap" title="Экспорт отображаемых товаров"><i class="fas fa-file-excel mr-2"></i>Экспорт</button>
+                        <button onclick="openCreateItemModal()" class="btn-blue px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Товар</button>
                     </div>
                 </div>
                 <div class="overflow-auto flex-1 p-0">
@@ -323,14 +328,14 @@
                 <div class="p-2 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-50 dark:bg-slate-800 text-sm">
                     <div class="flex items-center gap-2">
                         <span class="text-slate-600 dark:text-slate-400 font-medium text-xs">Показывать:</span>
-                        <button onclick="setItemsPerPage(20)" id="btnPerPage20" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition text-xs font-medium">20</button>
-                        <button onclick="setItemsPerPage(100)" id="btnPerPage100" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium">100</button>
-                        <button onclick="setItemsPerPage(null)" id="btnPerPageAll" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium">Все</button>
+                        <button onclick="setItemsPerPage(20)" id="btnPerPage20" class="px-3 py-1 btn-blue text-xs font-medium">20</button>
+                        <button onclick="setItemsPerPage(100)" id="btnPerPage100" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium">100</button>
+                        <button onclick="setItemsPerPage(null)" id="btnPerPageAll" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600 transition text-xs font-medium">Все</button>
                     </div>
                     <div id="warehousePaginationNav" class="flex items-center gap-3">
-                        <button onclick="prevPage()" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition" id="btnPrevPage"><i class="fas fa-chevron-left"></i></button>
+                        <button onclick="prevPage()" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition" id="btnPrevPage"><i class="fas fa-chevron-left"></i></button>
                         <span id="pageIndicator" class="text-slate-600 dark:text-slate-400 font-medium text-xs min-w-[80px] text-center">Стр. 1 из 1</span>
-                        <button onclick="nextPage()" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition" id="btnNextPage"><i class="fas fa-chevron-right"></i></button>
+                        <button onclick="nextPage()" class="px-3 py-1 bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-full hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition" id="btnNextPage"><i class="fas fa-chevron-right"></i></button>
                     </div>
                 </div>
             </div>
@@ -365,7 +370,7 @@
             <div class="flex-1 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-col transition-colors overflow-hidden">
                 <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-t-lg flex justify-between items-center">
                     <h2 class="text-lg font-bold text-slate-800 dark:text-white">Работа со складом</h2>
-                    <button onclick="openCreateItemModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 whitespace-nowrap">
+                    <button onclick="openCreateItemModal()" class="btn-blue px-3 py-1.5 text-sm whitespace-nowrap">
                         <i class="fas fa-plus mr-1"></i>Товар
                     </button>
                 </div>
@@ -387,10 +392,10 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4 mt-2">
-                            <button onclick="saveMovementIn()" class="bg-green-600 text-white py-3 rounded font-bold hover:bg-green-700 transition flex items-center justify-center gap-2">
+                            <button onclick="saveMovementIn()" class="btn-green py-3 font-bold flex items-center justify-center gap-2">
                                 <i class="fas fa-arrow-down"></i> Приход
                             </button>
-                            <button onclick="saveMovementOut()" class="bg-red-600 text-white py-3 rounded font-bold hover:bg-red-700 transition flex items-center justify-center gap-2">
+                            <button onclick="saveMovementOut()" class="btn-red py-3 font-bold flex items-center justify-center gap-2">
                                 <i class="fas fa-arrow-up"></i> Списание
                             </button>
                         </div>
@@ -435,7 +440,7 @@
                 <div class="p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="font-bold text-lg text-slate-800 dark:text-white">Реестр проектов</h2>
-                        <button onclick="openCreateProjectModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"><i class="fas fa-plus mr-2"></i>Проект</button>
+                        <button onclick="openCreateProjectModal()" class="btn-blue px-4 py-2 text-sm"><i class="fas fa-plus mr-2"></i>Проект</button>
                     </div>
                     <div class="flex items-center gap-2">
                         <div class="flex-1 max-w-md">
@@ -490,9 +495,10 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="printSpec()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded shadow text-xs font-bold uppercase transition" title="Распечатать"><i class="fas fa-print"></i> Печать</button>
-                            <button onclick="printSpec(false)" class="bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 px-3 py-1.5 rounded shadow text-xs font-bold uppercase transition" title="Печать без цен"><i class="fas fa-print"></i> Печать для производства</button>
-                            <button id="btnCommitSpec" onclick="commitSpec()" class="bg-green-600 text-white px-3 py-1.5 rounded shadow text-xs font-bold uppercase active:scale-95 transition">Списать</button>
+                            <button onclick="exportSpecToExcel()" class="btn-green px-3 py-1.5 shadow text-xs font-bold uppercase" title="Экспорт в Excel"><i class="fas fa-file-excel"></i> Excel</button>
+                            <button onclick="printSpec()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 py-1.5 rounded-full shadow text-xs font-bold uppercase transition" title="Распечатать"><i class="fas fa-print"></i> Печать</button>
+                            <button onclick="printSpec(false)" class="bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-500 px-3 py-1.5 rounded-full shadow text-xs font-bold uppercase transition" title="Печать без цен"><i class="fas fa-print"></i> Печать для производства</button>
+                            <button id="btnCommitSpec" onclick="commitSpec()" class="btn-green px-3 py-1.5 shadow text-xs font-bold uppercase active:scale-95">Списать</button>
                         </div>
                     </div>
 
@@ -502,8 +508,8 @@
                             <div id="specSearchResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border border-t-0 dark:border-slate-600 shadow-2xl max-h-60 overflow-auto rounded-b-lg text-sm z-30"></div>
                         </div>
                         <input type="number" id="specAddQty" class="w-32 shrink-0 border dark:border-slate-600 p-2 rounded text-sm text-center bg-white dark:bg-slate-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" value="1">
-                        <button onclick="addToSpec()" class="bg-blue-600 text-white w-10 shrink-0 rounded hover:bg-blue-700 active:bg-blue-800 transition-colors flex items-center justify-center"><i class="fas fa-plus"></i></button>
-                        <button onclick="openAddCustomItemModal()" class="bg-yellow-500 text-white px-3 shrink-0 rounded hover:bg-yellow-600 active:bg-yellow-700 shadow transition-colors whitespace-nowrap" title="Добавить нестандартное изделие"><i class="fas fa-plus-circle"></i></button>
+                        <button onclick="addToSpec()" class="btn-blue w-10 shrink-0 flex items-center justify-center"><i class="fas fa-plus"></i></button>
+                        <button onclick="openAddCustomItemModal()" class="bg-yellow-500 text-white px-3 shrink-0 rounded-full hover:bg-yellow-600 active:bg-yellow-700 shadow transition-colors whitespace-nowrap" title="Добавить нестандартное изделие"><i class="fas fa-plus-circle"></i></button>
                     </div>
 
                     <div class="overflow-auto flex-1 border-t border-slate-100 dark:border-slate-700">
@@ -538,7 +544,7 @@
             <div class="w-full md:w-1/4 bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-col h-1/3 md:h-auto transition-colors">
                 <div class="p-3 border-b dark:border-slate-600 flex justify-between items-center bg-slate-50 dark:bg-slate-700 rounded-t-lg">
                     <h3 class="font-bold text-slate-700 dark:text-slate-300 text-sm">Запросы</h3>
-                    <button onclick="openCreateCommercialRequestModal()" class="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700">
+                    <button onclick="openCreateCommercialRequestModal()" class="btn-blue px-2 py-1 text-xs">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -557,13 +563,13 @@
                             <span id="crStatus"></span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="openCompanySettingsModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-600" title="Реквизиты компании">
+                            <button onclick="openCompanySettingsModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs hover:bg-slate-200 dark:hover:bg-slate-600" title="Реквизиты компании">
                                 <i class="fas fa-building"></i>
                             </button>
-                            <button id="btnConvertToProject" onclick="convertRequestToProject()" class="bg-green-600 text-white px-3 py-1.5 rounded text-xs hover:bg-green-700">
+                            <button id="btnConvertToProject" onclick="convertRequestToProject()" class="btn-green px-3 py-1.5 text-xs">
                                 <i class="fas fa-exchange-alt mr-1"></i> В проект
                             </button>
-                            <button onclick="deleteCommercialRequest()" class="bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 px-3 py-1.5 rounded text-xs hover:bg-red-200 dark:hover:bg-red-800">
+                            <button onclick="deleteCommercialRequest()" class="btn-red px-3 py-1.5 text-xs">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -596,7 +602,7 @@
                     <div class="flex-1 border-t dark:border-slate-700 pt-4 overflow-hidden flex flex-col">
                         <div class="flex justify-between items-center mb-3">
                             <h3 class="font-bold text-sm text-slate-700 dark:text-slate-300">Коммерческие предложения</h3>
-                            <button onclick="openAddProposalModal()" class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                            <button onclick="openAddProposalModal()" class="btn-blue px-3 py-1 text-xs">
                                 <i class="fas fa-plus mr-1"></i> Добавить КП
                             </button>
                         </div>
@@ -617,7 +623,7 @@
                             <h2 class="font-bold text-lg text-slate-800 dark:text-white" id="proposalTitle">КП</h2>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="printCommercialProposal(document.getElementById('proposalRequestId').value, document.getElementById('proposalId').value)" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded text-xs hover:bg-slate-200 dark:hover:bg-slate-600">
+                            <button onclick="printCommercialProposal(document.getElementById('proposalRequestId').value, document.getElementById('proposalId').value)" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-3 py-1.5 rounded-full text-xs hover:bg-slate-200 dark:hover:bg-slate-600">
                                 <i class="fas fa-print mr-1"></i> Печать
                             </button>
                         </div>
@@ -625,7 +631,7 @@
                     
                     <!-- Add Light Panel -->
                     <div class="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg mb-4 flex gap-2 items-center">
-                        <button onclick="openAddLightModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                        <button onclick="openAddLightModal()" class="btn-blue px-4 py-2 text-sm">
                             <i class="fas fa-plus mr-1"></i> Добавить светильник
                         </button>
                     </div>
@@ -681,37 +687,37 @@
                         <div class="bg-white dark:bg-slate-800 rounded-lg shadow p-4 sticky top-4 transition-colors">
                             <h3 class="font-bold text-slate-700 dark:text-slate-300 mb-3 text-sm uppercase">Разделы</h3>
                             <nav class="space-y-1" id="helpNavigation">
-                                <button onclick="showHelpSection('quickstart')" class="help-nav-btn active w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('quickstart')" class="help-nav-btn active w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-rocket mr-2"></i>Быстрый старт
                                 </button>
-                                <button onclick="showHelpSection('warehouse')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('warehouse')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-boxes mr-2"></i>Управление складом
                                 </button>
-                                <button onclick="showHelpSection('movements')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('movements')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-exchange-alt mr-2"></i>Движение товаров
                                 </button>
-                                <button onclick="showHelpSection('projects')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('projects')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-project-diagram mr-2"></i>Проекты
                                 </button>
-                                <button onclick="showHelpSection('specs')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('specs')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-file-invoice mr-2"></i>Спецификации
                                 </button>
-                                <button onclick="showHelpSection('dashboard')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('dashboard')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-chart-pie mr-2"></i>Дашборд
                                 </button>
-                                <button onclick="showHelpSection('commercial')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('commercial')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-briefcase mr-2"></i>Коммерческий отдел
                                 </button>
-                                <button onclick="showHelpSection('users')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('users')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-users mr-2"></i>Пользователи и роли
                                 </button>
-                                <button onclick="showHelpSection('settings')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('settings')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-cog mr-2"></i>Настройки
                                 </button>
-                                <button onclick="showHelpSection('tips')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('tips')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-lightbulb mr-2"></i>Полезные фишки
                                 </button>
-                                <button onclick="showHelpSection('faq')" class="help-nav-btn w-full text-left px-3 py-2 rounded text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
+                                <button onclick="showHelpSection('faq')" class="help-nav-btn w-full text-left px-3 py-2 rounded-full text-sm hover:bg-blue-50 dark:hover:bg-slate-700 transition">
                                     <i class="fas fa-question mr-2"></i>FAQ
                                 </button>
                             </nav>
@@ -751,13 +757,13 @@
                     </label>
                 </div>
 
-                <button onclick="exportData()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
+                <button onclick="exportData()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-full font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
                     <i class="fas fa-download"></i> Скачать базу (Backup)
                 </button>
                 
                 <div class="relative">
                     <input type="file" id="importFile" class="hidden" onchange="importData(this)">
-                    <button onclick="document.getElementById('importFile').click()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
+                    <button onclick="document.getElementById('importFile').click()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-full font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
                         <i class="fas fa-upload"></i> Загрузить базу (JSON)
                     </button>
                 </div>
@@ -765,13 +771,13 @@
                 <!-- New Legacy Import -->
                 <div class="relative mt-2">
                     <input type="file" id="importLegacyFile" class="hidden" onchange="importLegacyCSV(this)" accept=".csv">
-                    <button onclick="document.getElementById('importLegacyFile').click()" class="w-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 py-3 rounded-lg font-bold hover:bg-orange-100 dark:hover:bg-orange-900/50 transition flex items-center justify-center gap-2 border border-orange-200 dark:border-orange-800">
+                    <button onclick="document.getElementById('importLegacyFile').click()" class="w-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 py-3 rounded-full font-bold hover:bg-orange-100 dark:hover:bg-orange-900/50 transition flex items-center justify-center gap-2 border border-orange-200 dark:border-orange-800">
                         <i class="fas fa-file-import"></i> Импорт из старого CSV
                     </button>
                 </div>
 
                 <div class="border-t dark:border-slate-600 my-4 pt-4">
-                     <button onclick="exportToExcel()" class="w-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 py-3 rounded-lg font-bold hover:bg-green-200 dark:hover:bg-green-800 transition flex items-center justify-center gap-2">
+                     <button onclick="exportToExcel()" class="w-full btn-green py-3 font-bold flex items-center justify-center gap-2">
                         <i class="fas fa-file-excel"></i> Экспорт в Excel (CSV)
                     </button>
                 </div>
@@ -783,15 +789,15 @@
                     </h4>
                     
                     <div class="space-y-3">
-                        <button onclick="openUsersModal()" class="w-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 py-3 rounded-lg font-bold hover:bg-blue-200 dark:hover:bg-blue-800 transition flex items-center justify-center gap-2">
+                        <button onclick="openUsersModal()" class="w-full btn-blue py-3 font-bold flex items-center justify-center gap-2">
                             <i class="fas fa-users"></i> Управление пользователями
                         </button>
                         
-                        <button onclick="openRolesModal()" class="w-full bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 py-3 rounded-lg font-bold hover:bg-purple-200 dark:hover:bg-purple-800 transition flex items-center justify-center gap-2">
+                        <button onclick="openRolesModal()" class="w-full bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 py-3 rounded-full font-bold hover:bg-purple-200 dark:hover:bg-purple-800 transition flex items-center justify-center gap-2">
                             <i class="fas fa-user-shield"></i> Настройка прав ролей
                         </button>
                         
-                        <button onclick="openLogsModal()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
+                        <button onclick="openLogsModal()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-full font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
                             <i class="fas fa-history"></i> Журнал действий
                         </button>
                     </div>
@@ -805,14 +811,14 @@
 
     <!-- MODALS -->
     <div id="projectDetailsModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><h3 class="font-bold text-lg text-slate-800 dark:text-white" id="pdTitle">История</h3><button onclick="closeModal('projectDetailsModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1 text-slate-600 dark:text-slate-300" id="pdContent"></div></div></div>
-    <div id="itemCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[60]"><div class="modal-content bg-white dark:bg-slate-700 rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl transition-colors mr-5"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6 text-slate-700 dark:text-slate-300"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500 dark:bg-slate-600 dark:text-slate-400 dark:border-slate-600" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><div class="flex items-center gap-2"><input id="cardCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white flex-1" type="number"><span id="cardPriceChangeDate" class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"></span></div></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div class="md:col-span-2"><img id="cardImgPreview" src="" class="w-full h-64 object-contain mb-3 rounded-lg border border-slate-200 bg-slate-50 hidden"><label class="lbl">Фото URL</label><input id="cardImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..." oninput="updateCardPreview()"></div><div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div class="mt-8 flex justify-between"><button onclick="deleteItemFromCard()" class="text-red-500 hover:text-red-700 font-bold px-4 py-3 transition"><i class="fas fa-trash mr-2"></i>Удалить</button><button onclick="saveItemFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Операции</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th><th class="p-2">Накладная</th></tr></thead><tbody id="cardMovHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Проекты</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div></div></div></div></div>
-    <div id="createItemModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div class="col-span-2 relative"><label class="lbl">Наименование</label><input id="newItemName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" oninput="handleNewItemNameSearch()" autocomplete="off"><div id="newItemNameResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border border-t-0 dark:border-slate-600 shadow-2xl max-h-48 overflow-auto rounded-b-lg text-sm z-30"></div><div id="newItemDuplicateWarning" class="hidden mt-1 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-600 dark:text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i><span id="newItemDuplicateText">Товар с таким названием уже существует</span></div></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newItemFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
-    <div id="createProjectModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div><label class="lbl">Год</label><input id="newPrYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="10"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newPrFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button></div></div></div></div>
-    <div id="projectCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchProjectTab('info')" id="ptab-info" class="modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600">Основная информация</div><div onclick="switchProjectTab('specs')" id="ptab-specs" class="modal-tab px-2 py-1 text-slate-500">Спецификации</div></div><button onclick="closeModal('projectCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><input type="hidden" id="pcId"><div id="pview-info" class="space-y-4 text-slate-700 dark:text-slate-300"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Год</label><input id="pcYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Номер заявки</label><input id="pcNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div><label class="lbl">Наименование</label><input id="pcName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Описание</label><textarea id="pcDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="10"></textarea></div><div><label class="lbl">Заказчик</label><input id="pcClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Дата начала</label><input id="pcStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Срок сдачи</label><input id="pcEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div></div><div><label class="lbl">Бюджет (руб)</label><input id="pcCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Файл / Документ (URL)</label><input id="pcFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div><div class="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded border dark:border-slate-600 flex justify-between items-center"><span class="text-sm font-bold text-slate-500 dark:text-slate-400">Текущий статус:</span><span id="pcStatus" class="font-bold px-2 py-1 rounded text-sm"></span></div>                <div class="mt-6 flex justify-between pt-4 border-t dark:border-slate-700"><div><button id="btnDeleteProject" onclick="deleteProjectFromCard()" class="text-red-500 hover:text-red-700 font-bold px-4 py-3 transition hidden"><i class="fas fa-trash mr-2"></i>Удалить проект</button></div><div class="flex"><button id="btnSaveProject" onclick="saveProjectFromCard()" class="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 shadow w-full sm:w-auto">Сохранить изменения</button></div>
-                </div></div><div id="pview-specs" class="hidden"><div class="flex justify-between items-center mb-3"><h4 class="font-bold text-slate-700 dark:text-slate-300">Состав проекта</h4><button id="btnCreateSpec" onclick="createNewSpec()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"><i class="fas fa-plus mr-2"></i>Создать спецификацию</button></div><div class="overflow-hidden border dark:border-slate-700 rounded-lg"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="px-4 py-2">Название спецификации</th><th class="px-4 py-2 text-center">Статус</th><th class="px-4 py-2 text-center">Позиций</th><th class="px-4 py-2 text-right">Сумма</th></tr></thead><tbody id="pcSpecsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div class="mt-4 text-right font-bold text-lg text-slate-800 dark:text-white">Общая сумма: <span id="pcTotalSpecsCost">0 ₽</span></div></div></div></div></div>
+    <div id="itemCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[60]"><div class="modal-content bg-white dark:bg-slate-700 rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl transition-colors mr-5"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchModalTab('info')" id="mtab-info" class="modal-tab active px-2 py-1">Инфо</div><div onclick="switchModalTab('history')" id="mtab-history" class="modal-tab px-2 py-1">История</div></div><button onclick="closeModal('itemCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><div id="mview-info"><input type="hidden" id="cardId"><div class="grid grid-cols-2 gap-6 text-slate-700 dark:text-slate-300"><div class="space-y-4"><div><label class="lbl">Наименование</label><input id="cardName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Производитель</label><input id="cardManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="cardCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"></div></div><div class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Всего</label><input id="cardQty" class="inp bg-slate-100 text-slate-500 dark:bg-slate-600 dark:text-slate-400 dark:border-slate-600" type="number" readonly></div><div><label class="lbl">Ед. изм</label><select id="cardUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div></div><div><label class="lbl">Цена</label><div class="flex items-center gap-2"><input id="cardCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white flex-1" type="number"><span id="cardPriceChangeDate" class="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap"></span></div></div></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="cardChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="3"></textarea></div><div class="md:col-span-2"><img id="cardImgPreview" src="" class="w-full h-64 object-contain mb-3 rounded-lg border border-slate-200 bg-slate-50 hidden"><label class="lbl">Фото URL</label><input id="cardImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..." oninput="updateCardPreview()"></div><div class="col-span-2"><label class="lbl">Файл (URL)</label><input id="cardFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div class="mt-8 flex justify-between items-center"><div class="flex gap-2"><button onclick="deleteItemFromCard()" class="btn-red font-bold px-4 py-3"><i class="fas fa-trash mr-2"></i>Удалить</button><button onclick="openQuickMoveFromCard('in')" class="btn-green px-4 py-3 font-bold shadow" title="Приход товара"><i class="fas fa-arrow-down mr-2"></i>Приход</button><button onclick="openQuickMoveFromCard('out')" class="btn-red px-4 py-3 font-bold shadow" title="Списание товара"><i class="fas fa-arrow-up mr-2"></i>Списание</button></div><button onclick="saveItemFromCard()" class="btn-blue px-6 py-3 font-bold shadow">Сохранить</button></div></div><div id="mview-history" class="hidden space-y-6"><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Операции</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Дата</th><th class="p-2">Тип</th><th class="p-2 text-right">Кол-во</th><th class="p-2">Накладная</th></tr></thead><tbody id="cardMovHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div><h4 class="font-bold text-slate-700 dark:text-slate-300 mb-2 border-b dark:border-slate-700 pb-1">Проекты</h4><table class="w-full text-sm text-left border dark:border-slate-700 rounded"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400"><tr><th class="p-2">Проект</th><th class="p-2">Спец.</th><th class="p-2 text-center">Статус</th><th class="p-2 text-right">Кол-во</th></tr></thead><tbody id="cardSpecHistory" class="text-slate-600 dark:text-slate-300 divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div></div></div></div></div>
+    <div id="createItemModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый товар</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div class="col-span-2 relative"><label class="lbl">Наименование</label><input id="newItemName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" oninput="handleNewItemNameSearch()" autocomplete="off"><div id="newItemNameResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border border-t-0 dark:border-slate-600 shadow-2xl max-h-48 overflow-auto rounded-b-lg text-sm z-30"></div><div id="newItemDuplicateWarning" class="hidden mt-1 p-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded text-xs text-red-600 dark:text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i><span id="newItemDuplicateText">Товар с таким названием уже существует</span></div></div><div><label class="lbl">Производитель</label><input id="newItemManuf" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Категория</label><input id="newItemCat" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" list="catDataList"><datalist id="catDataList"></datalist></div><div><label class="lbl">Нач. остаток</label><input id="newItemQty" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div><label class="lbl">Ед. изм</label><select id="newItemUnit" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white"><option value="шт.">шт.</option><option value="п.м.">п.м.</option><option value="уп.">уп.</option><option value="кг">кг</option></select></div><div><label class="lbl">Цена</label><input id="newItemCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number" value="0"></div><div class="col-span-2"><label class="lbl">Характеристики</label><textarea id="newItemChars" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="2"></textarea></div><div class="col-span-2"><label class="lbl">Фото (URL)</label><input id="newItemImg" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newItemFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewItem()" class="btn-blue px-4 py-2">Создать</button></div></div></div></div>
+    <div id="createProjectModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-lg transition-colors"><div class="p-6"><h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Новый проект</h3><div class="grid grid-cols-2 gap-4 mb-4 text-slate-700 dark:text-slate-300"><div><label class="lbl">Год</label><input id="newPrYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Заявка</label><input id="newPrNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Наименование</label><input id="newPrName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="col-span-2"><label class="lbl">Описание</label><textarea id="newPrDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="10"></textarea></div><div class="col-span-2"><label class="lbl">Заказчик</label><input id="newPrClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Начало</label><input id="newPrStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Сдача</label><input id="newPrEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div class="col-span-2"><label class="lbl">Бюджет</label><input id="newPrCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div class="col-span-2"><label class="lbl">Файл / Документ (URL)</label><input id="newPrFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div></div><div class="flex justify-end gap-2"><button onclick="closeModal('createProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button><button onclick="createNewProject()" class="btn-blue px-4 py-2">Создать</button></div></div></div></div>
+    <div id="projectCardModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50"><div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl transition-colors"><div class="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800 rounded-t-lg"><div class="flex gap-6 text-sm font-bold"><div onclick="switchProjectTab('info')" id="ptab-info" class="modal-tab active px-2 py-1 text-blue-600 border-b-2 border-blue-600">Основная информация</div><div onclick="switchProjectTab('specs')" id="ptab-specs" class="modal-tab px-2 py-1 text-slate-500">Спецификации</div></div><button onclick="closeModal('projectCardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button></div><div class="p-6 overflow-y-auto flex-1"><input type="hidden" id="pcId"><div id="pview-info" class="space-y-4 text-slate-700 dark:text-slate-300"><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Год</label><input id="pcYear" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Номер заявки</label><input id="pcNum" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div></div><div><label class="lbl">Наименование</label><input id="pcName" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div><label class="lbl">Описание</label><textarea id="pcDesc" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" rows="10"></textarea></div><div><label class="lbl">Заказчик</label><input id="pcClient" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text"></div><div class="grid grid-cols-2 gap-4"><div><label class="lbl">Дата начала</label><input id="pcStart" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div><div><label class="lbl">Срок сдачи</label><input id="pcEnd" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="date"></div></div><div><label class="lbl">Бюджет (руб)</label><input id="pcCost" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="number"></div><div><label class="lbl">Файл / Документ (URL)</label><input id="pcFile" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white" type="text" placeholder="https://..."></div><div class="mt-4 p-3 bg-slate-50 dark:bg-slate-700 rounded border dark:border-slate-600 flex justify-between items-center"><span class="text-sm font-bold text-slate-500 dark:text-slate-400">Текущий статус:</span><span id="pcStatus" class="font-bold px-2 py-1 rounded text-sm"></span></div>                <div class="mt-6 flex justify-between pt-4 border-t dark:border-slate-700"><div><button id="btnDeleteProject" onclick="deleteProjectFromCard()" class="text-red-500 hover:text-red-700 font-bold px-4 py-3 transition hidden"><i class="fas fa-trash mr-2"></i>Удалить проект</button></div><div class="flex"><button id="btnSaveProject" onclick="saveProjectFromCard()" class="btn-blue px-6 py-3 font-bold shadow w-full sm:w-auto">Сохранить изменения</button></div>
+                </div></div><div id="pview-specs" class="hidden"><div class="flex justify-between items-center mb-3"><h4 class="font-bold text-slate-700 dark:text-slate-300">Состав проекта</h4><button id="btnCreateSpec" onclick="createNewSpec()" class="btn-blue px-4 py-2 text-sm font-medium"><i class="fas fa-plus mr-2"></i>Создать спецификацию</button></div><div class="overflow-hidden border dark:border-slate-700 rounded-lg"><table class="w-full text-sm text-left text-slate-600 dark:text-slate-300"><thead class="bg-slate-50 dark:bg-slate-700 text-xs text-slate-500 dark:text-slate-400 uppercase"><tr><th class="px-4 py-2">Название спецификации</th><th class="px-4 py-2 text-center">Статус</th><th class="px-4 py-2 text-center">Позиций</th><th class="px-4 py-2 text-right">Сумма</th></tr></thead><tbody id="pcSpecsBody" class="divide-y divide-slate-200 dark:divide-slate-700"></tbody></table></div><div class="mt-4 text-right font-bold text-lg text-slate-800 dark:text-white">Общая сумма: <span id="pcTotalSpecsCost">0 ₽</span></div></div></div></div></div>
 
     <!-- Quick Move Modal -->
-    <div id="quickMoveModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+    <div id="quickMoveModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-[70]">
         <div class="modal-content bg-white dark:bg-slate-800 p-6 rounded-lg w-full max-w-sm shadow-2xl transition-colors">
             <input type="hidden" id="quickMoveId">
             <input type="hidden" id="quickMoveType">
@@ -827,7 +833,7 @@
 
             <div class="flex justify-end gap-2">
                 <button onclick="closeModal('quickMoveModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                <button onclick="saveQuickMove()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">OK</button>
+                <button onclick="saveQuickMove()" class="btn-blue px-6 py-2 font-bold">OK</button>
             </div>
         </div>
     </div>
@@ -846,7 +852,7 @@
             </div>
             <div class="mt-6 flex justify-end gap-2">
                 <button onclick="closeAddCustomItemModal()" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                <button onclick="addCustomItem()" class="bg-yellow-500 text-white px-4 py-2 rounded font-bold hover:bg-yellow-600">Добавить</button>
+                <button onclick="addCustomItem()" class="bg-yellow-500 text-white px-4 py-2 rounded-full font-bold hover:bg-yellow-600">Добавить</button>
             </div>
         </div>
     </div>
@@ -857,11 +863,11 @@
             <div class="p-6">
                 <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Добавить спецификацию</h3>
                 <div class="space-y-3 mb-6">
-                    <button onclick="openCreateNewSpec()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                    <button onclick="openCreateNewSpec()" class="w-full btn-blue py-3 font-bold flex items-center justify-center gap-2">
                         <i class="fas fa-plus-circle"></i> Создать новую спецификацию
                     </button>
                     <div class="text-center text-slate-500 dark:text-slate-400 text-sm">или</div>
-                    <button onclick="openSelectExistingSpec()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
+                    <button onclick="openSelectExistingSpec()" class="w-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-full font-bold hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center justify-center gap-2">
                         <i class="fas fa-copy"></i> Использовать существующую
                     </button>
                 </div>
@@ -902,7 +908,7 @@
                 </button>
             </div>
             <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-                <button onclick="openAddUserModal()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+                <button onclick="openAddUserModal()" class="btn-blue px-4 py-2 text-sm">
                     <i class="fas fa-plus mr-2"></i>Добавить пользователя
                 </button>
             </div>
@@ -959,7 +965,7 @@
                 </div>
                 <div class="mt-6 flex justify-end gap-2">
                     <button onclick="closeModal('editUserModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="saveUserFromModal()" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">Сохранить</button>
+                    <button onclick="saveUserFromModal()" class="btn-blue px-4 py-2 font-bold">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -1045,7 +1051,7 @@
                 </button>
                 <div class="flex gap-2">
                     <button onclick="closeModal('rolesModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="saveRolePermissions()" class="bg-purple-600 text-white px-6 py-2 rounded font-bold hover:bg-purple-700">Сохранить</button>
+                    <button onclick="saveRolePermissions()" class="bg-purple-600 text-white px-6 py-2 rounded-full font-bold hover:bg-purple-700">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -1074,10 +1080,10 @@
                     <option value="user">Пользователи</option>
                 </select>
                 <input type="date" id="logsFilterDate" class="inp dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                <button onclick="filterLogs()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                <button onclick="filterLogs()" class="btn-blue px-4 py-2">
                     <i class="fas fa-search mr-1"></i>Найти
                 </button>
-                <button onclick="exportLogs()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                <button onclick="exportLogs()" class="btn-green px-4 py-2">
                     <i class="fas fa-download mr-1"></i>Экспорт
                 </button>
             </div>
@@ -1127,7 +1133,7 @@
                 </div>
                 <div class="flex justify-end gap-2">
                     <button onclick="closeModal('createCommercialRequestModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="createCommercialRequest()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button>
+                    <button onclick="createCommercialRequest()" class="btn-blue px-4 py-2">Создать</button>
                 </div>
             </div>
         </div>
@@ -1145,7 +1151,7 @@
                 </div>
                 <div class="flex justify-end gap-2">
                     <button onclick="closeModal('addProposalModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="createCommercialProposal()" class="bg-blue-600 text-white px-4 py-2 rounded">Создать</button>
+                    <button onclick="createCommercialProposal()" class="btn-blue px-4 py-2">Создать</button>
                 </div>
             </div>
         </div>
@@ -1223,7 +1229,7 @@
                 
                 <div class="flex justify-end gap-2 mt-6">
                     <button onclick="closeModal('addLightModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="saveLightToProposal()" class="bg-blue-600 text-white px-4 py-2 rounded">Сохранить</button>
+                    <button onclick="saveLightToProposal()" class="btn-blue px-4 py-2">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -1270,10 +1276,10 @@
                             <input type="text" id="calcItemSearch" class="inp dark:bg-slate-600 dark:border-slate-500 dark:text-white" placeholder="Категория → Товар..." autocomplete="off" oninput="handleCalcItemSearch(true)" onfocus="handleCalcItemSearch()">
                             <div id="calcSearchResults" class="hidden absolute left-0 top-full w-full bg-white dark:bg-slate-700 border dark:border-slate-600 shadow-lg max-h-60 overflow-auto rounded-b-lg z-10"></div>
                         </div>
-                        <button onclick="openAddCalcCustomItemModal()" class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600" title="Добавить нестандартный компонент">
+                        <button onclick="openAddCalcCustomItemModal()" class="bg-yellow-500 text-white px-4 py-2 rounded-full hover:bg-yellow-600" title="Добавить нестандартный компонент">
                             <i class="fas fa-plus"></i>
                         </button>
-                        <button onclick="openGlobalCalculationSearch()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600" title="Поиск готовых калькуляций">
+                        <button onclick="openGlobalCalculationSearch()" class="bg-purple-500 text-white px-4 py-2 rounded-full hover:bg-purple-600" title="Поиск готовых калькуляций">
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
@@ -1311,9 +1317,19 @@
                 </div>
             </div>
             
-            <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
-                <button onclick="closeModal('calculationEditorModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                <button onclick="saveCalculation()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">Сохранить</button>
+            <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                <div class="flex gap-2">
+                    <button onclick="exportCalculationToExcel()" class="btn-green px-4 py-2 text-sm font-bold" title="Экспорт в Excel">
+                        <i class="fas fa-file-excel mr-1"></i> Excel
+                    </button>
+                    <button onclick="printCalculation()" class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 px-4 py-2 rounded-full text-sm font-bold transition" title="Печать">
+                        <i class="fas fa-print mr-1"></i> Печать
+                    </button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('calculationEditorModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
+                    <button onclick="saveCalculation()" class="btn-blue px-6 py-2 font-bold">Сохранить</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1350,7 +1366,7 @@
             </div>
             <div class="mt-6 flex justify-end gap-2">
                 <button onclick="closeModal('calcCustomItemModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                <button onclick="addCalcCustomItem()" class="bg-yellow-500 text-white px-4 py-2 rounded font-bold hover:bg-yellow-600">Добавить</button>
+                <button onclick="addCalcCustomItem()" class="bg-yellow-500 text-white px-4 py-2 rounded-full font-bold hover:bg-yellow-600">Добавить</button>
             </div>
         </div>
     </div>
@@ -1410,7 +1426,7 @@
             </div>
             <div class="p-4 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
                 <button onclick="closeModal('convertToProjectModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                <button onclick="executeConvertToProject()" class="bg-green-600 text-white px-6 py-2 rounded font-bold hover:bg-green-700">
+                <button onclick="executeConvertToProject()" class="btn-green px-6 py-2 font-bold">
                     <i class="fas fa-check mr-1"></i> Создать проект
                 </button>
             </div>
@@ -1484,7 +1500,7 @@
                 
                 <div class="flex justify-end gap-2 mt-6">
                     <button onclick="closeModal('companySettingsModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="saveCompanySettings()" class="bg-blue-600 text-white px-4 py-2 rounded">Сохранить</button>
+                    <button onclick="saveCompanySettings()" class="btn-blue px-4 py-2">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -1538,7 +1554,7 @@
                                     Панель категорий (вкладка Склад)
                                 </label>
                                 <div class="flex">
-                                    <button id="btnCategoryLeft" onclick="toggleCategoryPanelPosition('left'); updateUICustomizationControls();" class="flex-1 py-2 px-3 rounded-l-lg font-medium text-sm transition bg-blue-600 text-white">
+                                    <button id="btnCategoryLeft" onclick="toggleCategoryPanelPosition('left'); updateUICustomizationControls();" class="flex-1 py-2 px-3 rounded-l-lg font-medium text-sm btn-blue">
                                         <i class="fas fa-arrow-left mr-1"></i> Слева
                                     </button>
                                     <button id="btnCategoryRight" onclick="toggleCategoryPanelPosition('right'); updateUICustomizationControls();" class="flex-1 py-2 px-3 rounded-r-lg font-medium text-sm transition bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-500">
@@ -1547,44 +1563,17 @@
                                 </div>
                             </div>
                             
-                            <!-- Theme Colors -->
+                            <!-- Theme Colors Button -->
                             <div class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
                                 <div class="flex justify-between items-center mb-2">
                                     <label class="block text-sm font-medium text-slate-600 dark:text-slate-300">
                                         Цветовая схема
                                     </label>
-                                    <button onclick="resetThemeColors()" class="text-xs text-blue-500 hover:underline">Сбросить</button>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <!-- Light Theme / Base -->
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Светлая</div>
-                                        <div class="space-y-1">
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Фон 1</span> <input type="color" onchange="setThemeColor('--color-slate-100', this.value)" id="clr-slate-100" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Фон 2</span> <input type="color" onchange="setThemeColor('--color-slate-50', this.value)" id="clr-slate-50" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Бордер</span> <input type="color" onchange="setThemeColor('--color-slate-200', this.value)" id="clr-slate-200" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Текст</span> <input type="color" onchange="setThemeColor('--color-slate-800', this.value)" id="clr-slate-800" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                        </div>
-                                    </div>
-                                    <!-- Dark Theme / Deep -->
-                                    <div>
-                                        <div class="text-xs font-bold text-slate-400 uppercase mb-1">Темная</div>
-                                        <div class="space-y-1">
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Фон 1</span> <input type="color" onchange="setThemeColor('--color-slate-900', this.value)" id="clr-slate-900" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Бордер</span> <input type="color" onchange="setThemeColor('--color-slate-700', this.value)" id="clr-slate-700" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Текст 1</span> <input type="color" onchange="setThemeColor('--color-slate-300', this.value)" id="clr-slate-300" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                            <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Текст 2</span> <input type="color" onchange="setThemeColor('--color-white', this.value)" id="clr-white" class="w-6 h-6 rounded cursor-pointer border-0 p-0"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <div class="text-xs font-bold text-slate-400 uppercase mb-1">Акцент (Blue)</div>
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex flex-col items-center"><input type="color" onchange="setThemeColor('--color-blue-600', this.value)" id="clr-blue-600" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><span class="text-[10px] text-slate-400 mt-1">Main</span></div>
-                                        <div class="flex flex-col items-center"><input type="color" onchange="setThemeColor('--color-blue-500', this.value)" id="clr-blue-500" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><span class="text-[10px] text-slate-400 mt-1">Light</span></div>
-                                        <div class="flex flex-col items-center"><input type="color" onchange="setThemeColor('--color-blue-700', this.value)" id="clr-blue-700" class="w-8 h-8 rounded cursor-pointer border-0 p-0"><span class="text-[10px] text-slate-400 mt-1">Dark</span></div>
-                                    </div>
-                                </div>
+                                <button onclick="openColorSchemeModal()" class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                                    <i class="fas fa-palette"></i>
+                                    Настроить цвета интерфейса
+                                </button>
                             </div>
                             
                             <p class="text-xs text-slate-500 dark:text-slate-400">
@@ -1596,12 +1585,281 @@
                 
                 <div class="mt-6 flex justify-end gap-2">
                     <button onclick="closeModal('userProfileModal')" class="text-slate-500 dark:text-slate-400 px-4 py-2">Отмена</button>
-                    <button onclick="saveUserProfile()" class="bg-blue-600 text-white px-6 py-2 rounded font-bold hover:bg-blue-700">Сохранить</button>
+                    <button onclick="saveUserProfile()" class="btn-blue px-6 py-2 font-bold">Сохранить</button>
                 </div>
             </div>
         </div>
     </div>
     </div><!-- Закрытие appContainer -->
+
+    <!-- Color Scheme Modal -->
+    <div id="colorSchemeModal" class="modal-backdrop fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-lg w-full max-w-4xl max-h-[90vh] shadow-2xl transition-colors flex flex-col">
+            <div class="p-6 border-b dark:border-slate-700 flex-shrink-0">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-xl text-slate-800 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-palette text-blue-600"></i> Настройка цветовой схемы
+                    </h3>
+                    <button onclick="closeModal('colorSchemeModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1">
+                <!-- Пресеты -->
+                <div class="mb-6">
+                    <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                        <i class="fas fa-magic text-purple-600"></i> Готовые темы
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <button onclick="applyColorPreset('light')" class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 hover:border-blue-500 transition-colors text-left">
+                            <div class="font-medium text-sm text-slate-700 dark:text-slate-200 mb-1">Светлая тема</div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-4 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #2563eb;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #1e293b;"></div>
+                            </div>
+                        </button>
+                        <button onclick="applyColorPreset('dark')" class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 hover:border-blue-500 transition-colors text-left">
+                            <div class="font-medium text-sm text-slate-700 dark:text-slate-200 mb-1">Темная тема</div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-4 rounded" style="background: #0f172a; border: 1px solid #334155;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #2563eb;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #f1f5f9;"></div>
+                            </div>
+                        </button>
+                        <button onclick="applyColorPreset('terminal')" class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 hover:border-blue-500 transition-colors text-left">
+                            <div class="font-medium text-sm text-slate-700 dark:text-slate-200 mb-1">Терминальная</div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-4 rounded" style="background: #0a0e0a; border: 1px solid #2d4a2d;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #00ff41;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #00ff41;"></div>
+                            </div>
+                        </button>
+                        <button onclick="applyColorPreset('pastel')" class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 hover:border-blue-500 transition-colors text-left">
+                            <div class="font-medium text-sm text-slate-700 dark:text-slate-200 mb-1">Пастельные</div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-4 rounded" style="background: #fef7ff; border: 1px solid #fbcfe8;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #0ea5e9;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #581c87;"></div>
+                            </div>
+                        </button>
+                        <button onclick="applyColorPreset('apple')" class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 hover:border-blue-500 transition-colors text-left">
+                            <div class="font-medium text-sm text-slate-700 dark:text-slate-200 mb-1">Apple</div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-4 rounded" style="background: #f5f5f7; border: 1px solid #d2d2d7;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #007aff;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #1c1c1e;"></div>
+                            </div>
+                        </button>
+                        <button onclick="applyColorPreset('material')" class="p-3 bg-slate-50 dark:bg-slate-700 rounded-lg border-2 border-slate-200 dark:border-slate-600 hover:border-blue-500 transition-colors text-left">
+                            <div class="font-medium text-sm text-slate-700 dark:text-slate-200 mb-1">Material</div>
+                            <div class="flex gap-1">
+                                <div class="w-4 h-4 rounded" style="background: #fafafa; border: 1px solid #e0e0e0;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #1976d2;"></div>
+                                <div class="w-4 h-4 rounded" style="background: #212121;"></div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Настройки цветов -->
+                <div class="space-y-6">
+                    <!-- Slate Colors -->
+                    <div>
+                        <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-3">Основные цвета (Slate) - Фоны, границы, текст</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 50</div>
+                                    <div class="text-[10px] opacity-75">Самый светлый фон</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-50', this.value)" id="clr-slate-50" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 100</div>
+                                    <div class="text-[10px] opacity-75">Светлый фон панелей</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-100', this.value)" id="clr-slate-100" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 200</div>
+                                    <div class="text-[10px] opacity-75">Границы, разделители</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-200', this.value)" id="clr-slate-200" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 300</div>
+                                    <div class="text-[10px] opacity-75">Границы, скроллбары</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-300', this.value)" id="clr-slate-300" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 400</div>
+                                    <div class="text-[10px] opacity-75">Вторичный текст</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-400', this.value)" id="clr-slate-400" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 500</div>
+                                    <div class="text-[10px] opacity-75">Основной текст</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-500', this.value)" id="clr-slate-500" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 600</div>
+                                    <div class="text-[10px] opacity-75">Темные границы</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-600', this.value)" id="clr-slate-600" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 700</div>
+                                    <div class="text-[10px] opacity-75">Темные фоны панелей</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-700', this.value)" id="clr-slate-700" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 800</div>
+                                    <div class="text-[10px] opacity-75">Фон модальных окон</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-800', this.value)" id="clr-slate-800" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Slate 900</div>
+                                    <div class="text-[10px] opacity-75">Самый темный фон</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-slate-900', this.value)" id="clr-slate-900" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Blue Colors -->
+                    <div>
+                        <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-3">Акцентные цвета (Blue) - Активные элементы, ссылки</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 50</div>
+                                    <div class="text-[10px] opacity-75">Светлый фон акцентов</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-50', this.value)" id="clr-blue-50" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 100</div>
+                                    <div class="text-[10px] opacity-75">Фон активных элементов</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-100', this.value)" id="clr-blue-100" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 400</div>
+                                    <div class="text-[10px] opacity-75">Акценты в темной теме</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-400', this.value)" id="clr-blue-400" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 500</div>
+                                    <div class="text-[10px] opacity-75">Акцентные элементы</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-500', this.value)" id="clr-blue-500" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 600</div>
+                                    <div class="text-[10px] opacity-75">Основной акцент</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-600', this.value)" id="clr-blue-600" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 700</div>
+                                    <div class="text-[10px] opacity-75">Темные акценты</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-700', this.value)" id="clr-blue-700" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Blue 800</div>
+                                    <div class="text-[10px] opacity-75">Очень темные акценты</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-blue-800', this.value)" id="clr-blue-800" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Base Colors -->
+                    <div>
+                        <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-3">Базовые цвета</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">White</div>
+                                    <div class="text-[10px] opacity-75">Белый фон, светлый текст</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-white', this.value)" id="clr-white" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400">
+                                    <div class="font-medium">Black</div>
+                                    <div class="text-[10px] opacity-75">Черный текст</div>
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-black', this.value)" id="clr-black" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Button Colors -->
+                    <div>
+                        <h4 class="font-bold text-slate-700 dark:text-slate-200 mb-3">Цвета кнопок</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                    <span class="inline-block w-3 h-3 rounded" style="background: var(--color-btn-blue);"></span>
+                                    Синяя кнопка (Blue)
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-btn-blue', this.value)" id="clr-btn-blue" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                    <span class="inline-block w-3 h-3 rounded" style="background: var(--color-btn-green);"></span>
+                                    Зеленая кнопка (Green)
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-btn-green', this.value)" id="clr-btn-green" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                    <span class="inline-block w-3 h-3 rounded" style="background: var(--color-btn-red);"></span>
+                                    Красная кнопка (Red)
+                                </label>
+                                <input type="color" onchange="setThemeColor('--color-btn-red', this.value)" id="clr-btn-red" class="w-full h-10 rounded cursor-pointer border border-slate-300 dark:border-slate-600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t dark:border-slate-700 flex justify-between items-center flex-shrink-0">
+                <button onclick="resetThemeColors()" class="text-red-500 hover:text-red-600 dark:hover:text-red-400 px-4 py-2 font-medium">
+                    <i class="fas fa-undo mr-2"></i>Сбросить к умолчанию
+                </button>
+                <button onclick="closeModal('colorSchemeModal')" class="btn-blue px-6 py-2 font-bold">
+                    Готово
+                </button>
+            </div>
+        </div>
+    </div>
 
     
     <!-- Modules -->
